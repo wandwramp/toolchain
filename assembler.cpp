@@ -224,26 +224,12 @@ void clean_up_line(char *&buf)
   // Remove leading spaces
   while (*buf == ' ' || *buf == '\t')
     buf++;
-  
-  // Ignore comments
-  if ((temp = strchr(buf, '#')) != NULL) {
-    *temp = '\0';
-    temp--;
-    while (*temp == ' ' || *temp == '\t')
-      temp--;
-    temp++;
-    *temp = '\0';
-  }
-  
-  // Strip trailing spaces and newlines
-  temp = buf + strlen(buf) - 1;
-  while (*temp == ' ' || *temp == '\t' || *temp == '\n')
-    *(temp--) = '\0';
-  
+    
   // Change tabs into spaces
   while ((temp = strchr(buf, '\t')) != NULL)
     *temp = ' ';
 
+  // Detect strings
   if ((string_start = strchr(buf, '\"')) != NULL) {
 
     if ((string_end = strchr(string_start + 1, '\"')) == NULL)
@@ -256,6 +242,26 @@ void clean_up_line(char *&buf)
 
   }
   
+  // Ignore comments, except within strings
+  temp = buf;
+  while ((temp = strchr(temp, '#')) != NULL) {
+    if ((string_start == NULL || temp < string_start || temp > string_end)
+	&& (*temp == ' ' && *(temp + 1) == ' ')) {
+      *temp = '\0';
+      temp--;
+      while (*temp == ' ' || *temp == '\t')
+	temp--;
+      temp++;
+      *temp = '\0';
+    }
+    temp++;
+  }
+  
+  // Strip trailing spaces and newlines
+  temp = buf + strlen(buf) - 1;
+  while (*temp == ' ' || *temp == '\t' || *temp == '\n')
+    *(temp--) = '\0';
+
   // Change multiple spaces into single spaces except within a string
   // We must make sure that string_end is kept
   temp = buf;
