@@ -384,6 +384,8 @@ int decode_GPR(char *&ptr)
   // We must scan until we get an end-of-line ('\0')
   // or until we see a comma, or until the register is too large
 
+  chew_whitespace(ptr);
+
   int reg_no = 0;
 
   if (tolower(*ptr) != 'r' && *ptr != '$')
@@ -450,6 +452,8 @@ int decode_SPR(char *&ptr)
   // We must scan until we get an end-of-line ('\0')
   // or until we see a comma, or until the register is too large
 
+  chew_whitespace(ptr);
+
   int reg_no = 0;
 
   if (*ptr != '$')
@@ -494,6 +498,11 @@ unsigned int parse_address(char *&ptr)
 {
   unsigned int value = 0;
 
+  if (ptr == NULL)
+    error(input_filename, current_line, "Numeric value expected", NULL);
+
+  chew_whitespace(ptr);
+
   // If this is hexadecimal
   if (*ptr == '0' && tolower(*(ptr + 1)) == 'x') {
     ptr += 2;
@@ -523,6 +532,8 @@ unsigned int parse_word(char *&ptr)
 
   if (ptr == NULL)
     error(input_filename, current_line, "Numeric value expected", NULL);
+
+  chew_whitespace(ptr);
 
   // If this is hexadecimal
   if (*ptr == '0' && tolower(*(ptr + 1)) == 'x') {
@@ -572,6 +583,11 @@ unsigned int parse_word(char *&ptr)
 unsigned int parse_half(char *&ptr)
 {
   unsigned int value = 0;
+
+  if (ptr == NULL)
+    error(input_filename, current_line, "Numeric value expected", NULL);
+
+  chew_whitespace(ptr);
 
   // If this is a character
   if (*ptr == '\'') {
