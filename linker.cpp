@@ -237,13 +237,7 @@ int main(int argc, char *argv[])
   for (current_file = 0 ; current_file < num_files ; current_file++) {
     // Open the current file
     ifstream sourcefile;
-    sourcefile.open(input_filename[current_file], ios::in
-#ifdef WIN32
-		    | ios::binary
-#else
-		    | ios::bin
-#endif
-		    );
+    sourcefile.open(input_filename[current_file], ios::in | ios::binary);
     
     if (!sourcefile) {
       cerr << "ERROR: Could not open file for input : " << input_filename[current_file] << endl;

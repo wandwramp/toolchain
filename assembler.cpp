@@ -1134,13 +1134,7 @@ int main(int argc, char *argv[])
 
   ofstream outputfile;
 
-  outputfile.open(output_filename, ios::out
-#ifdef WIN32
-		  | ios::binary
-#else
-		  | ios::bin
-#endif
-		  );
+  outputfile.open(output_filename, ios::out | ios::binary);
 
   if (!outputfile) {
     error(NULL, 0, "Could not open output file : ", output_filename);
