@@ -249,7 +249,7 @@ void clean_up_line(char *&buf)
     if ((string_end = strchr(string_start + 1, '\"')) == NULL)
       error(input_filename, current_line, "Unterminated string", NULL);
 
-    while ((*(string_end - 1) == '\\') && (*(string_end - 2) == '\\')) {
+    while ((*(string_end - 1) == '\\') && (*(string_end - 2) != '\\')) {
       if ((string_end = strchr(string_end + 1, '\"')) == NULL)
 	error(input_filename, current_line, "Unterminated string", NULL);
     }
