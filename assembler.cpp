@@ -849,9 +849,12 @@ void parse_line(char *buf)
 
   //cerr << "up to here...\n";
 
-  // We do not allow any instructions in the data segment
+  // We do not allow any instructions in the data or bss segments
   if (current_segment == DATA) {
-    error(input_filename, current_line, "Not allowed instructions in data segment", NULL);
+    error(input_filename, current_line, "Instructions not permitted in data segment", NULL);
+  }
+  if (current_segment == BSS) {
+    error(input_filename, current_line, "Instructions not permitted in bss segment", NULL);
   }
 
   memory_entry *new_entry = add_entry(current_segment, current_line);
