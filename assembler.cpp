@@ -765,7 +765,7 @@ void parse_line(char *buf)
       for (int i = 0 ; i < len ; i++) {
 	// Add the character
 	new_entry = add_entry(current_segment, current_line);
-	new_entry->data = string_buffer[len];
+	new_entry->data = string_buffer[i];
       }
 
       //      cerr << "left : " << operands << endl;
