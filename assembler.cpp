@@ -14,10 +14,11 @@ char *input_filename = NULL;
 int current_line = 1;
 
 const int max_line = 10000;
+const int max_string = 256;
 unsigned int address[NUM_SEGMENTS];
 seg_type current_segment;
 const int max_label_length = 30;
-char string_buffer[max_line];
+char string_buffer[max_string];
 
 struct label_entry {
   char name[max_label_length];
@@ -134,14 +135,14 @@ void chew_whitespace(char *&ptr)
 {
   while (ptr != NULL && isspace(*ptr))
     ptr++;
+  
+  if (ptr != NULL && *ptr == '#')
+    *ptr = '\0';
 }
 
 int still_more(char *&ptr)
 {
   chew_whitespace(ptr);
-
-  if (*ptr == '#')
-    *ptr = '\0';
 
   return (ptr != NULL && *ptr != '\0' && !isspace(*ptr));
 }
@@ -277,6 +278,10 @@ memory_entry *add_entry(seg_type seg_no, int current_line)
     segment_end[seg_no]->next = (new_entry = new memory_entry);
     segment_end[seg_no] = new_entry;
   }
+
+  if (new_entry == NULL)
+    error(input_filename, current_line, "Assembler error, could not allocate memory", NULL);
+
   new_entry->next = NULL;
   new_entry->line = current_line;
   new_entry->address = address[seg_no];
@@ -607,7 +612,7 @@ int parse_string(char *&ptr, char *buffer)
   
   chew_whitespace(ptr);
 
-  if (*ptr != '\"')
+  if (*ptr++ != '\"')
     error(input_filename, current_line, "String expected", NULL);
 
   while (*ptr != '\"') {
@@ -619,7 +624,7 @@ int parse_string(char *&ptr, char *buffer)
     decode_char(ptr, tmp);
     buffer[i] = tmp;
     i++;
-    if (i == max_line)
+    if (i == max_string)
       error(input_filename, current_line, "String exceeds maximum length", NULL);
   }
   ptr++;
@@ -630,14 +635,19 @@ void parse_line(char *buf)
 {
   char *temp;
 
+  //  cerr << "parse_line : " << buf << endl;
+
   clean_up_line(buf);
+  chew_whitespace(buf);
   check_labels(buf);
     
+  //  cerr << "tohere";
+
   // Remove leading spaces
   while (isspace(*buf))
     buf++;
   
-  // Get rid of comments
+  // Get rid of obvious comments
   if (*buf == '#')
     *buf = '\0';
 
@@ -664,16 +674,22 @@ void parse_line(char *buf)
     temp++;
   }
 
+  //  cerr << "up to here...";
+
   // Here we look up the mnemonic in our table.
   while (insn_table[insn_num].mnemonic != NULL
 	 && (strcmp(insn_table[insn_num].mnemonic, mnemonic) != 0)) {
     insn_num++;
   }
   
+  //  cerr << "now here...";
+
   if (insn_table[insn_num].mnemonic == NULL) {
     //  cerr << "mnemonic is : " << mnemonic << endl;
     error(input_filename, current_line, "Bad mnemonic : ", mnemonic);
   }
+
+  //  cerr << "then here...";
 
   // Handle assembler directives
   if (insn_table[insn_num].type == DIRECTIVE) {
@@ -743,6 +759,7 @@ void parse_line(char *buf)
       }
       memory_entry *new_entry;
 
+      //cerr << "calling parse_string : " << operands << endl;
       int len = parse_string(operands, string_buffer);
       
       for (int i = 0 ; i < len ; i++) {
@@ -751,6 +768,7 @@ void parse_line(char *buf)
 	new_entry->data = string_buffer[len];
       }
 
+      //      cerr << "left : " << operands << endl;
       if (still_more(operands))
 	error(input_filename, current_line, "Unexpected character encountered on line", NULL);
 
@@ -829,6 +847,8 @@ void parse_line(char *buf)
     return;
   }
 
+  //cerr << "up to here...\n";
+
   // We do not allow any instructions in the data segment
   if (current_segment == DATA) {
     error(input_filename, current_line, "Not allowed instructions in data segment", NULL);
@@ -841,11 +861,14 @@ void parse_line(char *buf)
   new_entry->data |= (insn_table[insn_num].OPCode << 28);
   new_entry->data |= (insn_table[insn_num].func << 16);
 
+  //  cerr << "here.\n";
   // Scan through the operand format string
   for (unsigned int i = 0 ; i < strlen(insn_table[insn_num].operands) ; i++) {
+    //    cerr << "parsing : '" << insn_table[insn_num].operands[i] << "'\n";
     chew_whitespace(operands);
     if (operands == NULL || *operands == '\0')
       error(input_filename, current_line, "Expecting more on line", NULL);
+    //    cerr << "done.\n";
     switch (insn_table[insn_num].operands[i]) {
     case 'd':
       new_entry->data |= (decode_GPR(operands) & 0xf) << 24;
@@ -900,37 +923,20 @@ void parse_line(char *buf)
 	  offset = ((unsigned)-((signed)offset)) & 0xfffff;
       }
       else {
-	// Here we have a label!
-	char buffer[max_label_length];
-	int i;
-	for (i = 0 ; i < max_label_length ; i++) {
-	  buffer[i] = *operands;
-
-	  operands++;
-	  
-	  if (*operands == ',' || *operands == '(' || *operands == '\0' || *operands == '\n' || *operands == '+')
-	    break;
-	}
-
-	if (i == max_label_length)
-	  error(input_filename, current_line, "Error in label, maybe label too long.", NULL);
+	if (parse_symbol(operands, symbol_buffer) == false)
+	  error(input_filename, current_line, "Label expected on line (because of ':')", NULL);
 	
-
 	offset = 0;
-
+	
 	if (*operands == '+') {
 	  operands++;
 	  // Read an offset
 	  offset = (parse_word(operands) & 0xfffff);
-	  
-	  //	  cerr << "found plus sign : offset = " << dec << offset << endl;
 	}
-
-	buffer[i + 1] = 0;
 
 	// Make a note of this label
 	new_entry->reference_type = absolute;
-	strcpy(new_entry->label, buffer);
+	strcpy(new_entry->label, symbol_buffer);
       }
 
       //      operands--;
@@ -942,9 +948,11 @@ void parse_line(char *buf)
       //     cerr << "data here is : 0x" << setw(8) << hex << setfill('0') << new_entry->data << endl;
       break;
     case 'b':
+      if (parse_symbol(operands, symbol_buffer) == false)
+	error(input_filename, current_line, "Label expected", NULL);
+
       new_entry->reference_type = relative;
-      strcpy(new_entry->label, operands);
-      operands += strlen(operands); // - 1;
+      strcpy(new_entry->label, symbol_buffer);
       break;
     case 'i': // 16 bit immediate value
       // Must be lower cased
@@ -954,13 +962,11 @@ void parse_line(char *buf)
       if (*operands == '0' && tolower(*(operands + 1)) == 'x') {
 	new_entry->data |= (parse_address(operands) & 0xfffff);
       }
-      else if (isdigit(*operands)) {
-	error(input_filename, current_line, "Label must not begin with a digit", NULL);
-      }
       else {
+	if (parse_symbol(operands, symbol_buffer) == false)
+	  error(input_filename, current_line, "Label expected", NULL);
 	new_entry->reference_type = absolute;
-	strcpy(new_entry->label, operands);
-	operands += strlen(operands); // - 1;
+	strcpy(new_entry->label, symbol_buffer);
       }
       break;
     default:
