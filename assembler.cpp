@@ -16,8 +16,8 @@ int current_line = 1;
 const int max_line = 10000;
 unsigned int address[NUM_SEGMENTS];
 seg_type current_segment;
-char *string_start = NULL, *string_end = NULL;
 const int max_label_length = 30;
+char string_buffer[max_line];
 
 struct label_entry {
   char name[max_label_length];
@@ -139,6 +139,10 @@ void chew_whitespace(char *&ptr)
 int still_more(char *&ptr)
 {
   chew_whitespace(ptr);
+
+  if (*ptr == '#')
+    *ptr = '\0';
+
   return (ptr != NULL && *ptr != '\0' && !isspace(*ptr));
 }
 
@@ -216,72 +220,10 @@ void clean_up_line(char *&buf)
     }
     temp++;
   }
-
-
-  string_start = NULL;
-  string_end = NULL;
- 
-  // Remove leading spaces
-  while (*buf == ' ' || *buf == '\t')
-    buf++;
     
   // Change tabs into spaces
   while ((temp = strchr(buf, '\t')) != NULL)
     *temp = ' ';
-
-  // Detect strings
-  if ((string_start = strchr(buf, '\"')) != NULL) {
-
-    if ((string_end = strchr(string_start + 1, '\"')) == NULL)
-      error(input_filename, current_line, "Unterminated string", NULL);
-
-    while ((*(string_end - 1) == '\\') && (*(string_end - 2) != '\\')) {
-      if ((string_end = strchr(string_end + 1, '\"')) == NULL)
-	error(input_filename, current_line, "Unterminated string", NULL);
-    }
-
-  }
-  
-  // Ignore comments, except within strings
-  temp = buf;
-  while ((temp = strchr(temp, '#')) != NULL) {
-    if ((string_start == NULL || temp < string_start || temp > string_end)
-	&& (*temp == ' ' && *(temp + 1) == ' ')) {
-      *temp = '\0';
-      temp--;
-      while (*temp == ' ' || *temp == '\t')
-	temp--;
-      temp++;
-      *temp = '\0';
-    }
-    temp++;
-  }
-  
-  // Strip trailing spaces and newlines
-  temp = buf + strlen(buf) - 1;
-  while (*temp == ' ' || *temp == '\t' || *temp == '\n')
-    *(temp--) = '\0';
-
-  // Change multiple spaces into single spaces except within a string
-  // We must make sure that string_end is kept
-  temp = buf;
-  while (*temp != '\0') {
-    if ((string_start == NULL || temp < string_start || temp > string_end)
-	&& (*temp == ' ' && *(temp + 1) == ' ')) {
-
-      char *walk = temp;
-      // Maintain string_end
-      string_end--;
-      do {
-	walk++;
-	*(walk - 1) = *walk;
-      } while (*walk != '\0');
-
-    }
-    else
-      temp++;
-  }
-
 }
 
 void check_labels(char *&buf)
@@ -292,8 +234,9 @@ void check_labels(char *&buf)
   if ((temp = strchr(buf, ':')) != NULL) {
 
     // Check to see if the colon is within a string
-    if (string_start && temp >= string_start && temp <= string_end)
+    if ((strchr(buf, '\"') != NULL) && (strchr(buf, '\"') < temp))
       return;
+
     // Check to see if the colon is a character constant
     if (temp > buf && *(temp - 1) == '\'' && *(temp + 1) == '\'')
       return;
@@ -655,6 +598,34 @@ unsigned int parse_half(char *&ptr)
   return value;
 }
 
+int parse_string(char *&ptr, char *buffer)
+{
+  int i = 0;
+
+  if (ptr == NULL)
+    error(input_filename, current_line, "String expected", NULL);
+  
+  chew_whitespace(ptr);
+
+  if (*ptr != '\"')
+    error(input_filename, current_line, "String expected", NULL);
+
+  while (*ptr != '\"') {
+    unsigned char tmp;
+    if (*ptr == '\0')
+      error(input_filename, current_line, "Unterminated string", NULL);
+
+
+    decode_char(ptr, tmp);
+    buffer[i] = tmp;
+    i++;
+    if (i == max_line)
+      error(input_filename, current_line, "String exceeds maximum length", NULL);
+  }
+  ptr++;
+  return i;
+}
+
 void parse_line(char *buf)
 {
   char *temp;
@@ -663,31 +634,17 @@ void parse_line(char *buf)
   check_labels(buf);
     
   // Remove leading spaces
-  while (*buf == ' ' || *buf == '\t')
+  while (isspace(*buf))
     buf++;
   
+  // Get rid of comments
+  if (*buf == '#')
+    *buf = '\0';
+
   // Empty line now?
   if (*buf == '\0')
     return;
-  
-  // We only want one space in the line
-  //  temp = strchr(buf, ' ');
-  //  if (temp != NULL) {
-  //    temp++;
-  //    while (*temp != '\0') {
-  //      if ((string_start == NULL || temp < string_start || temp > string_end)
-  //	  && (*temp == ' ')) {
-  //	char *walk = temp;
-  //	do {
-  //	  walk++;
-  //	  *(walk - 1) = *walk;
-  //	} while (*walk != '\0');
-  //      }
-  //      else
-  //	temp++;
-  //    }
-  //  }
-    
+      
   // Here we can process the instruction 
   char *mnemonic = buf;
   
@@ -696,11 +653,6 @@ void parse_line(char *buf)
     *(operands++) = '\0';
 
   chew_whitespace(operands);
-
-  // This should never happen
-  if (string_start != NULL && string_start < operands) {
-    error(NULL, 0, "Assembler error : string starts in mnemonic", NULL);
-  }
 
   int insn_num = 0;
   unsigned int offset;
@@ -722,8 +674,6 @@ void parse_line(char *buf)
     //  cerr << "mnemonic is : " << mnemonic << endl;
     error(input_filename, current_line, "Bad mnemonic : ", mnemonic);
   }
-
-  temp = operands;
 
   // Handle assembler directives
   if (insn_table[insn_num].type == DIRECTIVE) {
@@ -792,29 +742,16 @@ void parse_line(char *buf)
 	error(input_filename, current_line, "Cannot specify a string in .bss segment.", NULL);
       }
       memory_entry *new_entry;
-       
-      // This is a string
-      if (string_start == NULL)
-	error(input_filename, current_line, "String expected", NULL);
+
+      int len = parse_string(operands, string_buffer);
       
-      // Move past the opening quotes
-      temp++;
-      
-      while (temp < string_end) {
-	unsigned char chr;
-	// Decode the current character
-	decode_char(temp, chr);
+      for (int i = 0 ; i < len ; i++) {
 	// Add the character
 	new_entry = add_entry(current_segment, current_line);
-	new_entry->data = chr;
+	new_entry->data = string_buffer[len];
       }
 
-      // Move past the closing quotes
-      temp++;
-      
-      //      cerr << "remainder = '" << temp << "'\n";
-
-      if (still_more(temp))
+      if (still_more(operands))
 	error(input_filename, current_line, "Unexpected character encountered on line", NULL);
 
       // Add the null terminator
@@ -906,57 +843,57 @@ void parse_line(char *buf)
 
   // Scan through the operand format string
   for (unsigned int i = 0 ; i < strlen(insn_table[insn_num].operands) ; i++) {
-    chew_whitespace(temp);
-    if (temp == NULL || *temp == '\0')
+    chew_whitespace(operands);
+    if (operands == NULL || *operands == '\0')
       error(input_filename, current_line, "Expecting more on line", NULL);
     switch (insn_table[insn_num].operands[i]) {
     case 'd':
-      new_entry->data |= (decode_GPR(temp) & 0xf) << 24;
+      new_entry->data |= (decode_GPR(operands) & 0xf) << 24;
       break;
     case 'D':
-      new_entry->data |= (decode_SPR(temp) & 0xf) << 24;
+      new_entry->data |= (decode_SPR(operands) & 0xf) << 24;
       break;
     case 's':
-      new_entry->data |= (decode_GPR(temp) & 0xf) << 20;
+      new_entry->data |= (decode_GPR(operands) & 0xf) << 20;
       break;
     case 'S':
-      new_entry->data |= (decode_SPR(temp) & 0xf) << 20;
+      new_entry->data |= (decode_SPR(operands) & 0xf) << 20;
       break;
     case 't':
-      new_entry->data |= (decode_GPR(temp) & 0xf);
+      new_entry->data |= (decode_GPR(operands) & 0xf);
       break;
     case 'o': // Twenty bit offset
 
       offset = 0;
       // If this is hexadecimal
-      if (*temp == '0' && tolower(*(temp + 1)) == 'x') {
-	temp += 2;
-	if (!isxdigit(*temp))
+      if (*operands == '0' && tolower(*(operands + 1)) == 'x') {
+	operands += 2;
+	if (!isxdigit(*operands))
 	  error(input_filename, current_line, "Numeric value expected", NULL);
-	while (isxdigit(*temp)) {
+	while (isxdigit(*operands)) {
 	  offset = offset << 4;
-	  if (*temp >= '0' && *temp <= '9')
-	    offset += *temp - '0';
+	  if (*operands >= '0' && *operands <= '9')
+	    offset += *operands - '0';
 	  else
-	    offset += tolower(*temp) - 'a' + 10;
-	  temp++;
+	    offset += tolower(*operands) - 'a' + 10;
+	  operands++;
 	}
       }
-      else if (isdigit(*temp) || *temp == '-') {
+      else if (isdigit(*operands) || *operands == '-') {
 	bool negative = false;
-	if (*temp == '-')
+	if (*operands == '-')
 	  {
 	    negative = true;
-	    temp++;
+	    operands++;
 	  }
-	if (!isdigit(*temp))
+	if (!isdigit(*operands))
 	  error(input_filename, current_line, "Numeric value expected", NULL);
 
-	while (isdigit(*temp))
+	while (isdigit(*operands))
 	  {
 	    offset = offset * 10;
-	    offset += *temp - '0';
-	    temp++;
+	    offset += *operands - '0';
+	    operands++;
 	  }
 
 	if (negative == true)
@@ -967,11 +904,11 @@ void parse_line(char *buf)
 	char buffer[max_label_length];
 	int i;
 	for (i = 0 ; i < max_label_length ; i++) {
-	  buffer[i] = *temp;
+	  buffer[i] = *operands;
 
-	  temp++;
+	  operands++;
 	  
-	  if (*temp == ',' || *temp == '(' || *temp == '\0' || *temp == '\n' || *temp == '+')
+	  if (*operands == ',' || *operands == '(' || *operands == '\0' || *operands == '\n' || *operands == '+')
 	    break;
 	}
 
@@ -981,10 +918,10 @@ void parse_line(char *buf)
 
 	offset = 0;
 
-	if (*temp == '+') {
-	  temp++;
+	if (*operands == '+') {
+	  operands++;
 	  // Read an offset
-	  offset = (parse_word(temp) & 0xfffff);
+	  offset = (parse_word(operands) & 0xfffff);
 	  
 	  //	  cerr << "found plus sign : offset = " << dec << offset << endl;
 	}
@@ -996,7 +933,7 @@ void parse_line(char *buf)
 	strcpy(new_entry->label, buffer);
       }
 
-      //      temp--;
+      //      operands--;
       if (offset > 0xfffff)
 	error(input_filename, current_line, "Constant too large", NULL);
 	  
@@ -1006,36 +943,36 @@ void parse_line(char *buf)
       break;
     case 'b':
       new_entry->reference_type = relative;
-      strcpy(new_entry->label, temp);
-      temp += strlen(temp); // - 1;
+      strcpy(new_entry->label, operands);
+      operands += strlen(operands); // - 1;
       break;
     case 'i': // 16 bit immediate value
       // Must be lower cased
-      new_entry->data |= (parse_half(temp) & 0xffff);
+      new_entry->data |= (parse_half(operands) & 0xffff);
       break;
     case 'j':
-      if (*temp == '0' && tolower(*(temp + 1)) == 'x') {
-	new_entry->data |= (parse_address(temp) & 0xfffff);
+      if (*operands == '0' && tolower(*(operands + 1)) == 'x') {
+	new_entry->data |= (parse_address(operands) & 0xfffff);
       }
-      else if (isdigit(*temp)) {
+      else if (isdigit(*operands)) {
 	error(input_filename, current_line, "Label must not begin with a digit", NULL);
       }
       else {
 	new_entry->reference_type = absolute;
-	strcpy(new_entry->label, temp);
-	temp += strlen(temp); // - 1;
+	strcpy(new_entry->label, operands);
+	operands += strlen(operands); // - 1;
       }
       break;
     default:
-      if (*temp != insn_table[insn_num].operands[i]) {
+      if (*operands != insn_table[insn_num].operands[i]) {
 	error(input_filename, current_line, "Unexpected character encountered on line", NULL);
       }
-      temp++;
+      operands++;
     }
   }
 
   // Check for more characters than we expect.
-  if (still_more(temp))
+  if (still_more(operands))
     error(input_filename, current_line, "Unexpected character encountered on line", NULL);
 }
 
