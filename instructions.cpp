@@ -130,7 +130,7 @@ char *SPR_name[] = {
   "$spr0", "$spr1", "$spr2", "$spr3",
   "$cctrl", "$estat", "$icount", "$ccount",
   "$evec", "$ear", "$esp", "$ers",
-  "$spr12", "$spr13", "$spr14", "$spr15" };
+  "$ptable", "$base", "$spr14", "$spr15" };
 
 void disassemble(unsigned int insn_address, unsigned int instruction)
 {
