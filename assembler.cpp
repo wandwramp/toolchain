@@ -751,7 +751,7 @@ void parse_line(char *buf)
       char *ptr = buffer;
 
       if (isdigit(*temp) || *temp == '-' || *temp == ',' || *temp == '\0')
-	error(NULL, 0, "Expected symbol name.", NULL);
+	error(input_filename, current_line, "Expected symbol name.", NULL);
 
       while (*temp != 0 && *temp != ',')
 	*ptr++ = *temp++;
@@ -781,6 +781,10 @@ void parse_line(char *buf)
       current_segment = BSS;
     }
     else if (strcmp(mnemonic, ".global") == 0) {
+      if (operands == NULL) {
+	error(input_filename, current_line, "Global directive must specify a label.", NULL);
+      }
+
       // Make the specified label global
       label_entry *temp = get_label(operands);
       if (temp->global == false) {
