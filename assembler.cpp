@@ -14,7 +14,7 @@ char *input_filename = NULL;
 int current_line = 1;
 
 const int max_line = 10000;
-const int max_string = 256;
+const int max_string = 10000;
 unsigned int address[NUM_SEGMENTS];
 seg_type current_segment;
 const int max_label_length = 30;
@@ -165,7 +165,7 @@ bool parse_symbol(char *&ptr, char *buffer)
     if (char_count == max_label_length)
       error(input_filename, current_line, "Label too long", NULL);
       
-  } while (isalnum(*ptr) || *ptr == '_');
+  } while (isalnum(*ptr) || *ptr == '_' || *ptr == '.');
   *buffer++ = '\0';
   return true;
 }
