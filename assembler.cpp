@@ -368,6 +368,15 @@ void decode_char(char *&buf, unsigned char &chr)
 	case '\'':
 	  chr = '\'';
 	  break;
+	case '0':
+	  chr = '\0';
+	  buf++;
+	  while (isdigit(*buf)) {
+	    chr = (chr << 3) + (*buf - '0');
+	    buf++;
+	  }
+	  buf--;
+	  break;
 	default:
 	  error(input_filename, current_line, "Bad character escape sequence", NULL);
 	  break;
