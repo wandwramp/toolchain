@@ -66,6 +66,8 @@ struct memory_entry {
 label_entry *label_list = NULL;
 memory_entry *segment[NUM_SEGMENTS], *segment_end[NUM_SEGMENTS];
 
+char symbol_buffer[max_label_length];
+
 void init()
 {
   for (int i = 0 ; i < NUM_SEGMENTS ; i++) {
@@ -128,6 +130,43 @@ void warning(char *filename, int line_no, char *msg, char *param)
 }
 
 
+void chew_whitespace(char *&ptr)
+{
+  while (ptr != NULL && isspace(*ptr))
+    ptr++;
+}
+
+int still_more(char *&ptr)
+{
+  chew_whitespace(ptr);
+  return (ptr != NULL && *ptr != '\0' && !isspace(*ptr));
+}
+
+// This function will parse a symbol, returning true if one is found, or false otherwise
+bool parse_symbol(char *&ptr, char *buffer)
+{
+  int char_count = 0;
+
+  // Chew any leading whitespace
+  chew_whitespace(ptr);
+  
+  // First character must be a letter or an underscore.
+  if (!(isalpha(*ptr) || *ptr == '_'))
+    return false;
+
+  do {
+    *buffer++ = *ptr++;
+    char_count++;
+    if (char_count == max_label_length)
+      error(input_filename, current_line, "Label too long", NULL);
+      
+  } while (isalnum(*ptr) || *ptr == '_');
+  *buffer++ = '\0';
+  return true;
+}
+
+
+
 // This searches for a reference to a label, creating a new entry
 // if none is found
 label_entry *get_label(char *name)
@@ -139,7 +178,7 @@ label_entry *get_label(char *name)
   if (strchr(name, ' ') != NULL)
     error(input_filename, current_line, "Space in label", NULL);
   if (len >= max_label_length)
-    error(input_filename, current_line, "Label too long : ", name);
+    error(input_filename, current_line, "Label too long", NULL);
 
   label_entry *temp = label_list;
 
@@ -253,22 +292,25 @@ void check_labels(char *&buf)
     if (temp > buf && *(temp - 1) == '\'' && *(temp + 1) == '\'')
       return;
 
-    *temp = '\0';
+    // Extract a symbol from the start of this line.
+    if (parse_symbol(buf, symbol_buffer) == false)
+      error(input_filename, current_line, "Label expected on line (because of ':')", NULL);
     
-    // Register this label
-    label_entry *label = get_label(buf);
+    chew_whitespace(buf);
+    if (*buf != ':')
+      error(input_filename, current_line, "Badly formed label", NULL);
 
+    // Register this label
+    label_entry *label = get_label(symbol_buffer);
+    
     // If this label has already been resolved then we have a duplicate label
     if (label->resolved == true)
-      error(input_filename, current_line, "Duplicate label : ", buf);
-
+      error(input_filename, current_line, "Duplicate label : ", symbol_buffer);
+    
     // Fill in the values for this label
     label->segment = current_segment;
     label->address = address[current_segment];
     label->resolved = true;
-    
-    // Continue processing after this label
-    buf = temp + 1;
   }
 }
 
@@ -524,46 +566,6 @@ unsigned int parse_word(char *&ptr)
   return value;
 }
 
-char symbol_buffer[max_label_length];
-
-// Extract a symbol name from the current position
-char *get_symbol(char *&ptr)
-{
-  int i;
-  if (isdigit(*ptr))
-    error(input_filename, current_line, "Symbol name must not start with a digit", NULL);
-
-  symbol_buffer[0] = '\0';
-
-  for (i = 0 ; i < max_label_length ; i++) {
-    // Check for any character which would signal the end of the symbol
-    if (*ptr == ',' || *ptr == '(' || *ptr == '\n' || *ptr == '\0' || *ptr == ':') {
-      symbol_buffer[i] = '\0';
-      break;
-    }
-    // Copy the current character
-    symbol_buffer[i] = *ptr++;
-  }
-  
-  if (i == max_label_length) {
-    error(input_filename, current_line, "Label is too long", NULL);
-  }
-  
-  return symbol_buffer;
-}
-
-void chew_whitespace(char *&ptr)
-{
-  while (ptr != NULL && isspace(*ptr))
-    ptr++;
-}
-
-int still_more(char *&ptr)
-{
-  chew_whitespace(ptr);
-  return (ptr != NULL && *ptr != '\0' && !isspace(*ptr));
-}
-
 unsigned int parse_half(char *&ptr)
 {
   unsigned int value = 0;
@@ -697,30 +699,31 @@ void parse_line(char *buf)
 	if (operands == NULL) {
 	  error(input_filename, current_line, "Expecting value or label.", NULL);
 	}
+	chew_whitespace(operands);
+	if (*operands == '\0')
+	  error(input_filename, current_line, "Expecting value or label.", NULL);	  
+
 	do {
 	  memory_entry *new_entry = add_entry(current_segment, current_line);
 	  if (isdigit(*operands) || *operands == '-') {
 	    new_entry->data = parse_word(operands);
 	  }
 	  else {
-	    // This word holds the value of a label
+	    // This word holds the value of a symbol
 	    new_entry->reference_type = absolute;
-	    char *sym = get_symbol(operands);
-	    strcpy(new_entry->label, sym);
+	    
+	    parse_symbol(operands, symbol_buffer);
+
+	    strcpy(new_entry->label, symbol_buffer);
 	    new_entry->data = 0;
 	  }
 
 	  chew_whitespace(operands);
-	  //	  while (isspace(*operands))
-	  //	    operands++;
 	  
 	  if (*operands == ',')
 	    operands++;
 	  
 	  chew_whitespace(operands);
-	  //	  while (isspace(*operands))
-	  //	    operands++;
-	  
 	} while(*operands != '\0');
 
 	if (*(operands - 1) == ',')
@@ -787,32 +790,30 @@ void parse_line(char *buf)
       }
     }
     else if (strcmp(mnemonic, ".equ") == 0) {
-      // Get the label.
-      char buffer[30];
-      char *ptr = buffer;
+      if (operands == NULL) {
+	error(input_filename, current_line, "Equ directive must specify a symbol name and value", NULL);
+      }
 
-      if (isdigit(*temp) || *temp == '-' || *temp == ',' || *temp == '\0')
-	error(input_filename, current_line, "Expected symbol name.", NULL);
+      if (parse_symbol(operands, symbol_buffer) == false)
+	error(input_filename, current_line, "Expected symbol name", NULL);
 
-      while (*temp != 0 && *temp != ',')
-	*ptr++ = *temp++;
-
-      // Null terminate the label
-      *ptr = 0;
-
-      // Move past the comma
-      temp++;
+      chew_whitespace(operands);
+      if (*operands++ != ',')
+	error(input_filename, current_line, "Expected ',' after symbol name", NULL);
 
       // Make the specified symbol
-      label_entry *new_label = get_label(buffer);
+      label_entry *new_label = get_label(symbol_buffer);
 
-      new_label->address = parse_word(temp);
+      if (new_label->resolved == true)
+	error(input_filename, current_line, "Duplicate label : ", symbol_buffer);
+
+      new_label->address = parse_word(operands);
 
       new_label->line = current_line;
       new_label->resolved = true;
       new_label->segment = NONE;
 
-      if (still_more(temp))
+      if (still_more(operands))
 	error(input_filename, current_line, "Unexpected character encountered on line", NULL);
     }
     else if (strcmp(mnemonic, ".data") == 0) {
@@ -831,18 +832,20 @@ void parse_line(char *buf)
 	error(input_filename, current_line, "Unexpected character encountered on line", NULL);
     }
     else if (strcmp(mnemonic, ".global") == 0) {
-      if (operands == NULL) {
-	error(input_filename, current_line, "Global directive must specify a label.", NULL);
-      }
+      if (operands == NULL || parse_symbol(operands, symbol_buffer) == false)
+	error(input_filename, current_line, "Global directive must specify a label", NULL);
 
       // Make the specified label global
-      label_entry *temp = get_label(operands);
+      label_entry *temp = get_label(symbol_buffer);
       if (temp->global == false) {
 	// Increment the global count
 	num_globals++;
 	temp->global = true;
 	temp->line = current_line;
       }
+
+      if (still_more(operands))
+	error(input_filename, current_line, "Unexpected character encountered on line", NULL);      
     }
     else if (strcmp(mnemonic, ".mask") == 0)
       ;
