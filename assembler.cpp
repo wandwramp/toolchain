@@ -473,6 +473,9 @@ unsigned int parse_word(char *&ptr)
 {
   unsigned int value = 0;
 
+  if (ptr == NULL)
+    error(input_filename, current_line, "Numeric value expected", NULL);
+
   // If this is hexadecimal
   if (*ptr == '0' && tolower(*(ptr + 1)) == 'x') {
     ptr += 2;
@@ -671,6 +674,9 @@ void parse_line(char *buf)
     if (strcmp(mnemonic, ".word") == 0) {
       
       if (current_segment != BSS) {
+	if (operands == NULL) {
+	  error(input_filename, current_line, "Expecting value or label.", NULL);
+	}
 	do {
 	  memory_entry *new_entry = add_entry(current_segment, current_line);
 	  if (isdigit(*operands) || *operands == '-') {
