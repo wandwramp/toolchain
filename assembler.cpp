@@ -300,6 +300,9 @@ void check_labels(char *&buf)
     if (*buf != ':')
       error(input_filename, current_line, "Badly formed label", NULL);
 
+    // Move past the colon
+    buf++;
+
     // Register this label
     label_entry *label = get_label(symbol_buffer);
     
