@@ -121,7 +121,7 @@ void error(char *filename, int line_no, char *msg, char *param)
   bailout();
 }
 
-// Display an warining message
+// Display an warning message
 void warning(char *filename, int line_no, char *msg, char *param)
 {
   if (filename)
