@@ -712,6 +712,9 @@ void parse_line(char *buf)
 	chew_whitespace(operands);
 	if (*operands == '\0')
 	  error(input_filename, current_line, "Expecting value or label.", NULL);	  
+        if (strchr(operands, '"') != NULL) {
+          error(input_filename, current_line, "Expecting value or label.", NULL);
+        }
 
 	do {
 	  memory_entry *new_entry = add_entry(current_segment, current_line);
@@ -719,13 +722,31 @@ void parse_line(char *buf)
 	    new_entry->data = parse_word(operands);
 	  }
 	  else {
-	    // This word holds the value of a symbol
-	    new_entry->reference_type = absolute;
-	    
-	    parse_symbol(operands, symbol_buffer);
-
-	    strcpy(new_entry->label, symbol_buffer);
-	    new_entry->data = 0;
+            if (parse_symbol(operands, symbol_buffer)) {
+              // This word holds the value of a symbol
+              new_entry->reference_type = absolute;
+              strcpy(new_entry->label, symbol_buffer);
+              new_entry->data = 0;
+            }
+            else {
+              // This word could be a character in '' or otherwise
+              unsigned char chr;
+              if (*operands == '\'') {
+		// Skip the opening quote
+                operands++;
+                decode_char(operands, chr);
+		// Check and skip the ending quote
+                if (*operands != '\'') {
+                  error(input_filename, current_line, "Bad character constant.", NULL);
+                }
+                operands++;
+                new_entry->data = chr;
+              }
+              else {
+		// Otherwise is invalid.
+                error(input_filename, current_line, "Expecting value or label.", NULL);
+              }
+            }
 	  }
 
 	  chew_whitespace(operands);
