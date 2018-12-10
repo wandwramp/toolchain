@@ -1298,8 +1298,8 @@ int main(int argc, char *argv[])
   // Clean up our data structures
   cleanup();
 
-  delete relocation_array;
-  delete symbol_names;
+  delete[] relocation_array;
+  delete[] symbol_names;
 
   return 0;
 }
