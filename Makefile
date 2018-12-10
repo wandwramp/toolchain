@@ -1,6 +1,6 @@
 CC = g++
 RM = rm -f
-CFLAGS = -O3 -Wall
+CFLAGS = -std=c++98 -O3 -Wall -Wno-write-strings -g
 
 HEADERS = object_file.h instructions.h
 
@@ -16,4 +16,7 @@ wlink: linker.o instructions.o
 	$(CC) $(CFLAGS) linker.o instructions.o -o wlink
 
 clean:
-	$(RM) *.o *~ core wasm wlink wasm.exe wlink.exe
+	$(RM) *.o *~
+
+clobber:
+	$(RM) wasm wlink
