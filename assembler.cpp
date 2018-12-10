@@ -234,9 +234,15 @@ void clean_up_line(char *&buf)
 void check_labels(char *&buf)
 {
   char *temp;
+  char *comment;
+  comment = strchr(buf, '#');
 
   // Check for a label on this line
   if ((temp = strchr(buf, ':')) != NULL) {
+
+    // Check to see if the colon is after a comment marker
+    if (comment != NULL && temp > comment)
+        return;
 
     // Check to see if the colon is within a string
     if ((strchr(buf, '\"') != NULL) && (strchr(buf, '\"') < temp))
