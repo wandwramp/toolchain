@@ -1,12 +1,14 @@
-#include <iostream.h>
-#include <iomanip.h>
-#include <fstream.h>
+#include <iostream>
+#include <iomanip>
+#include <fstream>
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
 
 #include "instructions.h"
 #include "object_file.h"
+
+using namespace std;
 
 int num_globals = 0, num_local_refs = 0, num_unresolved = 0;
 

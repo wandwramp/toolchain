@@ -1,8 +1,10 @@
-#include <iostream.h>
-#include <iomanip.h>
+#include <iostream>
+#include <iomanip>
 #include <string.h>
 
 #include "instructions.h"
+
+using namespace std;
 
 insn_type insn_table[] = {
   // Arithmetic instructions

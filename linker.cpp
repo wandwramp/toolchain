@@ -1,6 +1,6 @@
-#include <iostream.h>
-#include <iomanip.h>
-#include <fstream.h>
+#include <iostream>
+#include <iomanip>
+#include <fstream>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -8,6 +8,8 @@
 
 #include "object_file.h"
 #include "instructions.h"
+
+using namespace std;
 
 bool error_flag = false, verbose_flag = false;
 
