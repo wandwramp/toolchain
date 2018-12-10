@@ -51,6 +51,8 @@ reg_type SPR_table[] = {
   { "ear", 9 },
   { "esp", 10 },
   { "ers", 11 },
+  { "ptable", 12 },
+  { "rbase", 13 },
   { NULL, 0 }
 };
 
