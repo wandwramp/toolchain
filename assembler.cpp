@@ -1128,6 +1128,9 @@ int main(int argc, char *argv[])
   while (!sourcefile.eof()) {
     // Read a line from the sourcefile
     sourcefile.getline(buffer, max_line);
+    if (sourcefile.bad()) {
+        error(NULL, 0, "Source file is directory : ", input_filename);
+    }
     parse_line(buffer);
     current_line++;
   }
