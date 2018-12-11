@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
 {
   int i;
   char *endptr = NULL;
-  char output_filename[30] = {0};
+  char output_filename[300] = {0};
 
   if (argc < 2)
     usage(argv[0]);
