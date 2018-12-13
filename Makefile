@@ -1,7 +1,13 @@
 CC = g++
 RM = rm -f
 CFLAGS = -std=c++98 -O3 -Wall -Wno-write-strings -g
-
+ifndef INSTALLDIR
+INSTALLDIR=~/wramp-install/
+endif
+MKDIR=mkdir -p
+COPY=cp
+BUILDBINS=wasm wlink 
+INSTALLBINS=$(INSTALLDIR)wasm $(INSTALLDIR)wlink
 HEADERS = object_file.h instructions.h
 
 .cpp.o:	$(HEADERS) $<
@@ -20,3 +26,8 @@ clean:
 
 clobber:
 	$(RM) wasm wlink
+	$(RM) $(INSTALLBINS)
+
+install: all
+	$(MKDIR) $(INSTALLDIR)
+	$(COPY) $(BUILDBINS) $(INSTALLDIR)
