@@ -22,6 +22,17 @@ Again, an output file can be chosen.
 
 ` $ wlink -o output.srec input1.o input2.o input3.o `
 
+`wlink` can also take several other paramaters.
+`-Ttext <address>` provides the memory address to start loading the resulting srec's .text segment.
+`-Tdata <address>` provides the memory address to start loading the resulting srec's .data segment. 
+`-Tbss <address>` provides the memory address to start loading the resulting srec's .bss segment. 
+`-Ebss <address>` provides the memory address that the resulting srec's .bss segment should finish at.
+`-v` instructs `wlink` to provide verbose output.
+
+Exsposed to the programmer there are also three special labels, `bss_size`, `text_size` and `data_size`.
+These three labels provide the size of the respective segment evaluated during the linking process.
+`la $1, bss_size` will load `$1` with the total size of the .bss segment.
+
 ## Building
 
 Building `wasm` and `wlink` simply requires `g++` to be installed.
