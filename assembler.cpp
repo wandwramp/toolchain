@@ -1033,25 +1033,40 @@ void parse_line(char *buf)
 				if (*operands == '+')
 				{
 					operands++;
-					// Read an offset
-					offset = (parse_word(operands) & 0xfffff);
+					// Read a positive offset
+					offset = parse_word(operands);
+
+					//cerr << "offset is : +0x" << setw(8) << hex << setfill('0') << offset << endl;
+
+					if (offset > 0x000fffff){
+						error(input_filename, current_line, "Constant is too large", NULL);
+					}
+
 				}
 				if (*operands == '-')
 				{
 					operands++;
-					// Read an offset
-					offset = (parse_word(operands) & 0xfffff);
-					offset ^= 0xffffffff;
-					offset +=1;
-					offset &= 0xfffff;
+					// Read a negitive offset
+					offset = parse_word(operands);
+
+					//cerr << "offset is : -0x" << setw(8) << hex << setfill('0') << offset;
+
+					offset = (offset ^ 0xffffffff) +1; //perform 2's compliment
+
+					//cerr << " and : +0x" << setw(8) << hex << setfill('0') << offset << endl;
+
+					if (offset < 0xfff00000){
+						error(input_filename, current_line, "Constant is too Negitive", NULL);
+					}
 				}
 
 				// Make a note of this label
 				new_entry->reference_type = absolute;
 				strcpy(new_entry->label, symbol_buffer);
+
+				offset &= 0xfffff;
 			}
 
-			//      operands--;
 			if (offset > 0xfffff)
 				error(input_filename, current_line, "Constant too large", NULL);
 
@@ -1130,9 +1145,9 @@ void resolve_labels()
 						switch (walk->reference_type)
 						{
 						case absolute:
-									cerr << "changed absolute data from 0x" << setw(8) << setfill('0') << hex << walk->data;
+									//cerr << "changed absolute data from 0x" << setw(8) << setfill('0') << hex << walk->data;
 							walk->data = (walk->data&0xfff00000) | ((temp->address + walk->data) & 0xfffff); //adding location
-									cerr << " to 0x" << setw(8) << setfill('0') << hex << walk->data << endl;
+									//cerr << " to 0x" << setw(8) << setfill('0') << hex << walk->data << endl;
 							break;
 						case relative:
 							walk->data |= ((unsigned)((signed)temp->address - ((signed)walk->address + 1))) & 0xfffff;
