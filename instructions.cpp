@@ -171,45 +171,44 @@ void disassemble(unsigned int insn_address, unsigned int instruction)
   
   // Scan through the operand format string
   for (int i = 0 ; (unsigned int)i < strlen(insn_table[insn_num].operands) ; i++) {
-    switch (insn_table[insn_num].operands[i])
-      {
+    switch (insn_table[insn_num].operands[i]) {
       case 'd':
-	cout << GPR_name[Rd];
-	break;
+		cout << GPR_name[Rd];
+		break;
       case 's':
-	cout << GPR_name[Rs];
-	break;
+		cout << GPR_name[Rs];
+		break;
       case 'D':
-	cout << SPR_name[Rd];
-	break;
+		cout << SPR_name[Rd];
+		break;
       case 'S':
-	cout << SPR_name[Rs];
-	break;
+		cout << SPR_name[Rs];
+		break;
       case 't':
-	cout << GPR_name[Rt];
-	break;
+		cout << GPR_name[Rt];
+		break;
       case 'o': // Twenty bit offset
-	if (address == 0)
-	  cout << '0';
-	else if (Rs != 0) {
-	  cout << signed_address;
-	}
-	else
-	  cout << "0x" << setw(5) << setfill('0') << hex << address;
-	break;
+		if (address == 0)
+		  cout << '0';
+		else if (Rs != 0) {
+		  cout << signed_address;
+		}
+		else
+		  cout << "0x" << setw(5) << setfill('0') << hex << address;
+		break;
       case 'b':
-	cout << "0x" << setw(5) << setfill('0') << hex << (((unsigned)((signed int)insn_address + signed_address) & 0xfffff) + 1);
-	break;
+		cout << "0x" << setw(5) << setfill('0') << hex << (((unsigned)((signed int)insn_address + signed_address) & 0xfffff) + 1);
+		break;
       case 'i': // 16 bit immediate value
-	// We should check if the instruction sign extends or not, and if it does then
-	// We should print a signed integer
-	cout << "0x" << setw(4) << setfill('0') << hex << immediate;
-	break;
+		// We should check if the instruction sign extends or not, and if it does then
+		// We should print a signed integer
+		cout << "0x" << setw(4) << setfill('0') << hex << immediate;
+		break;
       case 'j':
-	cout << "0x" << setw(5) << setfill('0') << hex << address;
-	break;
+		cout << "0x" << setw(5) << setfill('0') << hex << address;
+		break;
     default:
       cout << insn_table[insn_num].operands[i];
-      }
+    }
   }
 }
