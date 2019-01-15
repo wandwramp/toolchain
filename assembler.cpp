@@ -196,15 +196,7 @@ label_entry *get_label(char *name)
 	if (len >= max_label_length)
 		error(input_filename, current_line, "Label too long", NULL);
 
-	if (
-		(strcmp(name, "bss_size") == 0) ||
-		(strcmp(name, "data_size") == 0) ||
-		(strcmp(name, "text_size") == 0)
-		){
-		char errBuf[30];
-		sprintf(errBuf, "illegal label: %s",name);
-		error(input_filename, current_line, errBuf, NULL);
-	}
+
 	label_entry *temp = label_list;
 
 	// Check for the label already existing
@@ -285,6 +277,16 @@ void check_labels(char *&buf)
 
 		// Register this label
 		label_entry *label = get_label(symbol_buffer);
+
+		if (
+			(strcmp(label->name, "bss_size") == 0) ||
+			(strcmp(label->name, "data_size") == 0) ||
+			(strcmp(label->name, "text_size") == 0)
+			){
+			char errBuf[30];
+			sprintf(errBuf, "illegal label: %s",label->name);
+			error(input_filename, current_line, errBuf, NULL);
+		}
 
 		// If this label has already been resolved then we have a duplicate label
 		if (label->resolved == true)
