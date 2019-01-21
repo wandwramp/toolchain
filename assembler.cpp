@@ -1050,14 +1050,14 @@ void parse_line(char *buf)
 					//cerr << "offset is : +0x" << setw(8) << hex << setfill('0') << offset << endl;
 
 					if (offset > 0x000fffff){
-						error(input_filename, current_line, "Constant is too large", NULL);
+						error(input_filename, current_line, "Offset constant is too large", NULL);
 					}
 
 				}
 				if (*operands == '-')
 				{
 					operands++;
-					// Read a negitive offset
+					// Read a negative offset
 					offset = parse_word(operands);
 
 					//cerr << "offset is : -0x" << setw(8) << hex << setfill('0') << offset;
@@ -1067,7 +1067,7 @@ void parse_line(char *buf)
 					//cerr << " and : +0x" << setw(8) << hex << setfill('0') << offset << endl;
 
 					if (offset < 0xfff00000){
-						error(input_filename, current_line, "Constant is too Negitive", NULL);
+						error(input_filename, current_line, "Negative offset constant is too large", NULL);
 					}
 				}
 
