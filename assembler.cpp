@@ -1041,9 +1041,11 @@ void parse_line(char *buf)
 
 				offset = 0;
 
+				chew_whitespace(operands);
 				if (*operands == '+')
 				{
 					operands++;
+					chew_whitespace(operands);
 					// Read a positive offset
 					offset = parse_word(operands);
 
@@ -1057,6 +1059,7 @@ void parse_line(char *buf)
 				if (*operands == '-')
 				{
 					operands++;
+					chew_whitespace(operands);
 					// Read a negative offset
 					offset = parse_word(operands);
 
