@@ -113,7 +113,7 @@ struct reference {
 };
 
 typedef struct {
-  char filename[30];
+  char filename[300];
   object_header file_header;
   unsigned int *segment[NUM_SEGMENTS];
   // These hold the starting address of each segment
