@@ -176,7 +176,7 @@ bool parse_symbol(char *&ptr, char *buffer)
 		*buffer++ = *ptr++;
 		char_count++;
 		if (char_count == max_label_length)
-			error(input_filename, current_line, "Label too long", NULL);
+			error(input_filename, current_line, "Label too long.", NULL);
 
 	} while (isalnum(*ptr) || *ptr == '_' || *ptr == '.');
 	*buffer++ = '\0';
@@ -190,11 +190,11 @@ label_entry *get_label(char *name)
 	// Check for a label that is too long
 	int len = strlen(name);
 	if (isdigit(*name))
-		error(input_filename, current_line, "Label must not begin with a digit", NULL);
+		error(input_filename, current_line, "Label must not begin with a digit.", NULL);
 	if (strchr(name, ' ') != NULL)
-		error(input_filename, current_line, "Space in label", NULL);
+		error(input_filename, current_line, "Space in label.", NULL);
 	if (len >= max_label_length)
-		error(input_filename, current_line, "Label too long", NULL);
+		error(input_filename, current_line, "Label too long.", NULL);
 
 
 	label_entry *temp = label_list;
@@ -266,11 +266,11 @@ void check_labels(char *&buf)
 
 		// Extract a symbol from the start of this line.
 		if (parse_symbol(buf, symbol_buffer) == false)
-			error(input_filename, current_line, "Label expected on line (because of ':')", NULL);
+			error(input_filename, current_line, "Label expected on line (because of ':').", NULL);
 
 		chew_whitespace(buf);
 		if (*buf != ':')
-			error(input_filename, current_line, "Badly formed label", NULL);
+			error(input_filename, current_line, "Badly formed label.", NULL);
 
 		// Move past the colon
 		buf++;
@@ -278,14 +278,11 @@ void check_labels(char *&buf)
 		// Register this label
 		label_entry *label = get_label(symbol_buffer);
 
-		if (
-			(strcmp(label->name, "bss_size") == 0) ||
+		if ((strcmp(label->name, "bss_size")  == 0) ||
 			(strcmp(label->name, "data_size") == 0) ||
-			(strcmp(label->name, "text_size") == 0)
-			){
-			char errBuf[30];
-			sprintf(errBuf, "illegal label: %s",label->name);
-			error(input_filename, current_line, errBuf, NULL);
+			(strcmp(label->name, "text_size") == 0))
+		{
+			error(input_filename, current_line, "Illegal label name : ", label->name);
 		}
 
 		// If this label has already been resolved then we have a duplicate label
@@ -314,7 +311,7 @@ memory_entry *add_entry(seg_type seg_no, int current_line)
 	}
 
 	if (new_entry == NULL)
-		error(input_filename, current_line, "Assembler error, could not allocate memory", NULL);
+		error(input_filename, current_line, "Assembler error, could not allocate memory.", NULL);
 
 	new_entry->next = NULL;
 	new_entry->line = current_line;
@@ -367,7 +364,7 @@ void decode_char(char *&buf, unsigned char &chr)
 			buf--;
 			break;
 		default:
-			error(input_filename, current_line, "Bad character escape sequence", NULL);
+			error(input_filename, current_line, "Bad character escape sequence.", NULL);
 			break;
 		}
 		buf++;
@@ -387,7 +384,7 @@ int decode_GPR(char *&ptr)
 	int reg_no = 0;
 
 	if (tolower(*ptr) != 'r' && *ptr != '$')
-		error(input_filename, current_line, "Register identifier expected", NULL);
+		error(input_filename, current_line, "Register identifier expected.", NULL);
 
 	ptr++;
 
@@ -401,14 +398,14 @@ int decode_GPR(char *&ptr)
 			reg_no += *ptr - '0';
 
 			if (reg_no >= 16)
-				error(input_filename, current_line, "Register identifier expected", NULL);
+				error(input_filename, current_line, "Register identifier expected.", NULL);
 
 			ptr++;
 		} while (*ptr >= '0' && *ptr <= '9');
 	}
 	else if (tolower(*(ptr - 1)) == 'r')
 	{
-		error(input_filename, current_line, "Register identifier expected", NULL);
+		error(input_filename, current_line, "Register identifier expected.", NULL);
 	}
 	else
 	{
@@ -437,7 +434,7 @@ int decode_GPR(char *&ptr)
 			index++;
 
 		if (GPR_table[index].reg_name == NULL)
-			error(input_filename, current_line, "Register identifier expected", NULL);
+			error(input_filename, current_line, "Register identifier expected.", NULL);
 
 		reg_no = GPR_table[index].reg_num;
 	}
@@ -458,7 +455,7 @@ int decode_SPR(char *&ptr)
 	int reg_no = 0;
 
 	if (*ptr != '$')
-		error(input_filename, current_line, "Register identifier expected", NULL);
+		error(input_filename, current_line, "Register identifier expected.", NULL);
 
 	ptr++;
 
@@ -485,7 +482,7 @@ int decode_SPR(char *&ptr)
 		index++;
 
 	if (SPR_table[index].reg_name == NULL)
-		error(input_filename, current_line, "Special register identifier expected", NULL);
+		error(input_filename, current_line, "Special register identifier expected.", NULL);
 
 	reg_no = SPR_table[index].reg_num;
 
@@ -500,7 +497,7 @@ unsigned int parse_address(char *&ptr)
 	unsigned int value = 0;
 
 	if (ptr == NULL)
-		error(input_filename, current_line, "Numeric value expected", NULL);
+		error(input_filename, current_line, "Numeric value expected.", NULL);
 
 	chew_whitespace(ptr);
 
@@ -509,7 +506,7 @@ unsigned int parse_address(char *&ptr)
 	{
 		ptr += 2;
 		if (!isxdigit(*ptr))
-			error(input_filename, current_line, "Numeric value expected", NULL);
+			error(input_filename, current_line, "Numeric value expected.", NULL);
 		while (isxdigit(*ptr))
 		{
 			value = value << 4;
@@ -521,10 +518,10 @@ unsigned int parse_address(char *&ptr)
 		}
 	}
 	else
-		error(input_filename, current_line, "Hexadecimal address expected", NULL);
+		error(input_filename, current_line, "Hexadecimal address expected.", NULL);
 
 	if (value > 0xfffff)
-		error(input_filename, current_line, "Constant too large", NULL);
+		error(input_filename, current_line, "Constant too large.", NULL);
 
 	return value;
 }
@@ -534,7 +531,7 @@ unsigned int parse_word(char *&ptr)
 	unsigned int value = 0;
 
 	if (ptr == NULL)
-		error(input_filename, current_line, "Numeric value expected", NULL);
+		error(input_filename, current_line, "Numeric value expected.", NULL);
 
 	chew_whitespace(ptr);
 
@@ -543,11 +540,11 @@ unsigned int parse_word(char *&ptr)
 	{
 		ptr += 2;
 		if (!isxdigit(*ptr))
-			error(input_filename, current_line, "Numeric value expected", NULL);
+			error(input_filename, current_line, "Numeric value expected.", NULL);
 		while (isxdigit(*ptr))
 		{
 			if (value > 0x0fffffff)
-				error(input_filename, current_line, "Constant too large", NULL);
+				error(input_filename, current_line, "Constant too large.", NULL);
 
 			value = value << 4;
 			if (*ptr >= '0' && *ptr <= '9')
@@ -566,12 +563,12 @@ unsigned int parse_word(char *&ptr)
 			ptr++;
 		}
 		if (!isdigit(*ptr))
-			error(input_filename, current_line, "Numeric value expected", NULL);
+			error(input_filename, current_line, "Numeric value expected.", NULL);
 
 		while (isdigit(*ptr))
 		{
 			if (value >= 0x19999999)
-				error(input_filename, current_line, "Constant too large", NULL);
+				error(input_filename, current_line, "Constant too large.", NULL);
 			value = value * 10;
 			value += *ptr - '0';
 			ptr++;
@@ -580,7 +577,7 @@ unsigned int parse_word(char *&ptr)
 		if (negative == true)
 		{
 			if (value & 0x80000000)
-				error(input_filename, current_line, "Constant too large", NULL);
+				error(input_filename, current_line, "Constant too large.", NULL);
 			value = ((unsigned)-((signed)value));
 		}
 	}
@@ -594,15 +591,18 @@ unsigned int parse_half(char *&ptr)
 	unsigned int value = 0;
 
 	if (ptr == NULL)
-		error(input_filename, current_line, "Numeric value expected", NULL);
+		error(input_filename, current_line, "Numeric value expected.", NULL);
 
 	chew_whitespace(ptr);
 
 	// If this is a character
 	if (*ptr == '\'')
 	{
-		if ((*(ptr + 1) == '\\' && *(ptr + 3) != '\'') || (*(ptr + 1) != '\\' && *(ptr + 2) != '\''))
-			error(input_filename, current_line, "Bad character constant", NULL);
+		if ((*(ptr + 1) == '\\' && *(ptr + 3) != '\'') ||
+		    (*(ptr + 1) != '\\' && *(ptr + 2) != '\''))
+		{
+			error(input_filename, current_line, "Bad character constant.", NULL);
+		}
 		unsigned char chr = 0;
 		// Skip past the opening quote
 		ptr++;
@@ -616,7 +616,7 @@ unsigned int parse_half(char *&ptr)
 	{
 		ptr += 2;
 		if (!isxdigit(*ptr))
-			error(input_filename, current_line, "Numeric value expected", NULL);
+			error(input_filename, current_line, "Numeric value expected.", NULL);
 		while (isxdigit(*ptr))
 		{
 			value = value << 4;
@@ -636,7 +636,7 @@ unsigned int parse_half(char *&ptr)
 			ptr++;
 		}
 		if (!isdigit(*ptr))
-			error(input_filename, current_line, "Numeric value expected", NULL);
+			error(input_filename, current_line, "Numeric value expected.", NULL);
 
 		while (isdigit(*ptr))
 		{
@@ -649,7 +649,7 @@ unsigned int parse_half(char *&ptr)
 			value = ((unsigned)-((signed)value)) & 0xffff;
 	}
 	if (value > 0xffff)
-		error(input_filename, current_line, "Constant too large", NULL);
+		error(input_filename, current_line, "Constant too large.", NULL);
 
 	return value;
 }
@@ -659,24 +659,24 @@ int parse_string(char *&ptr, char *buffer)
 	int i = 0;
 
 	if (ptr == NULL)
-		error(input_filename, current_line, "String expected", NULL);
+		error(input_filename, current_line, "String expected.", NULL);
 
 	chew_whitespace(ptr);
 
 	if (*ptr++ != '\"')
-		error(input_filename, current_line, "String expected", NULL);
+		error(input_filename, current_line, "String expected.", NULL);
 
 	while (*ptr != '\"')
 	{
 		unsigned char tmp;
 		if (*ptr == '\0')
-			error(input_filename, current_line, "Unterminated string", NULL);
+			error(input_filename, current_line, "Unterminated string.", NULL);
 
 		decode_char(ptr, tmp);
 		buffer[i] = tmp;
 		i++;
 		if (i == max_string)
-			error(input_filename, current_line, "String exceeds maximum length", NULL);
+			error(input_filename, current_line, "String exceeds maximum length.", NULL);
 	}
 	ptr++;
 	return i;
@@ -842,7 +842,7 @@ void parse_line(char *buf)
 			//      cerr << "operands = '" << operands << "'\n";
 
 			if (still_more(operands))
-				error(input_filename, current_line, "Unexpected character encountered on line", NULL);
+				error(input_filename, current_line, "Additional text after directive argument.", NULL);
 		}
 		else if (strcmp(mnemonic, ".asciiz") == 0 || strcmp(mnemonic, ".ascii") == 0)
 		{
@@ -864,7 +864,7 @@ void parse_line(char *buf)
 
 			//      cerr << "left : " << operands << endl;
 			if (still_more(operands))
-				error(input_filename, current_line, "Unexpected character encountered on line", NULL);
+				error(input_filename, current_line, "Additional text after string.", NULL);
 
 			// Add the null terminator
 			if (strcmp(mnemonic, ".asciiz") == 0)
@@ -877,15 +877,15 @@ void parse_line(char *buf)
 		{
 			if (operands == NULL)
 			{
-				error(input_filename, current_line, "Equ directive must specify a symbol name and value", NULL);
+				error(input_filename, current_line, ".equ directive must specify a symbol name and value.", NULL);
 			}
 
 			if (parse_symbol(operands, symbol_buffer) == false)
-				error(input_filename, current_line, "Expected symbol name", NULL);
+				error(input_filename, current_line, "Expected symbol name.", NULL);
 
 			chew_whitespace(operands);
 			if (*operands++ != ',')
-				error(input_filename, current_line, "Expected ',' after symbol name", NULL);
+				error(input_filename, current_line, "Expected ',' after symbol name.", NULL);
 
 			// Make the specified symbol
 			label_entry *new_label = get_label(symbol_buffer);
@@ -900,30 +900,30 @@ void parse_line(char *buf)
 			new_label->segment = NONE;
 
 			if (still_more(operands))
-				error(input_filename, current_line, "Unexpected character encountered on line", NULL);
+				error(input_filename, current_line, "Additional text after directive arguments.", NULL);
 		}
 		else if (strcmp(mnemonic, ".data") == 0)
 		{
 			current_segment = DATA;
 			if (still_more(operands))
-				error(input_filename, current_line, "Unexpected character encountered on line", NULL);
+				error(input_filename, current_line, "Additional text after directive.", NULL);
 		}
 		else if (strcmp(mnemonic, ".text") == 0)
 		{
 			current_segment = TEXT;
 			if (still_more(operands))
-				error(input_filename, current_line, "Unexpected character encountered on line", NULL);
+				error(input_filename, current_line, "Additional text after directive.", NULL);
 		}
 		else if (strcmp(mnemonic, ".bss") == 0)
 		{
 			current_segment = BSS;
 			if (still_more(operands))
-				error(input_filename, current_line, "Unexpected character encountered on line", NULL);
+				error(input_filename, current_line, "Additional text after directive.", NULL);
 		}
 		else if (strcmp(mnemonic, ".global") == 0)
 		{
 			if (operands == NULL || parse_symbol(operands, symbol_buffer) == false)
-				error(input_filename, current_line, "Global directive must specify a label", NULL);
+				error(input_filename, current_line, "Global directive must specify a label.", NULL);
 
 			// Make the specified label global
 			label_entry *temp = get_label(symbol_buffer);
@@ -936,14 +936,16 @@ void parse_line(char *buf)
 			}
 
 			if (still_more(operands))
-				error(input_filename, current_line, "Unexpected character encountered on line", NULL);
+				error(input_filename, current_line, "Additional text after directive arguments.", NULL);
 		}
+		/*
 		else if (strcmp(mnemonic, ".mask") == 0)
 			;
 		else if (strcmp(mnemonic, ".frame") == 0)
 			;
 		else if (strcmp(mnemonic, ".extern") == 0)
 			;
+		*/
 		else
 			error(input_filename, current_line, "Unknown directive : ", mnemonic);
 		return;
@@ -954,11 +956,11 @@ void parse_line(char *buf)
 	// We do not allow any instructions in the data or bss segments
 	if (current_segment == DATA)
 	{
-		error(input_filename, current_line, "Instructions not permitted in data segment", NULL);
+		error(input_filename, current_line, "Instructions not permitted in data segment.", NULL);
 	}
 	if (current_segment == BSS)
 	{
-		error(input_filename, current_line, "Instructions not permitted in bss segment", NULL);
+		error(input_filename, current_line, "Instructions not permitted in bss segment.", NULL);
 	}
 
 	memory_entry *new_entry = add_entry(current_segment, current_line);
@@ -975,7 +977,7 @@ void parse_line(char *buf)
 		//    cerr << "parsing : '" << insn_table[insn_num].operands[i] << "'\n";
 		chew_whitespace(operands);
 		if (operands == NULL || *operands == '\0')
-			error(input_filename, current_line, "Expecting more on line", NULL);
+			error(input_filename, current_line, "Expecting more on line.", NULL);
 		//    cerr << "done.\n";
 		switch (insn_table[insn_num].operands[i])
 		{
@@ -1002,7 +1004,7 @@ void parse_line(char *buf)
 			{
 				operands += 2;
 				if (!isxdigit(*operands))
-					error(input_filename, current_line, "Numeric value expected", NULL);
+					error(input_filename, current_line, "Numeric value expected.", NULL);
 				while (isxdigit(*operands))
 				{
 					offset = offset << 4;
@@ -1022,7 +1024,7 @@ void parse_line(char *buf)
 					operands++;
 				}
 				if (!isdigit(*operands))
-					error(input_filename, current_line, "Numeric value expected", NULL);
+					error(input_filename, current_line, "Numeric value expected.", NULL);
 
 				while (isdigit(*operands))
 				{
@@ -1037,7 +1039,7 @@ void parse_line(char *buf)
 			else
 			{
 				if (parse_symbol(operands, symbol_buffer) == false)
-					error(input_filename, current_line, "Label expected on line (because of ':')", NULL);
+					error(input_filename, current_line, "Label expected on line.", NULL);
 
 				offset = 0;
 
@@ -1052,7 +1054,7 @@ void parse_line(char *buf)
 					//cerr << "offset is : +0x" << setw(8) << hex << setfill('0') << offset << endl;
 
 					if (offset > 0x000fffff){
-						error(input_filename, current_line, "Offset constant is too large", NULL);
+						error(input_filename, current_line, "Offset constant is too large.", NULL);
 					}
 
 				}
@@ -1070,7 +1072,7 @@ void parse_line(char *buf)
 					//cerr << " and : +0x" << setw(8) << hex << setfill('0') << offset << endl;
 
 					if (offset < 0xfff00000){
-						error(input_filename, current_line, "Negative offset constant is too large", NULL);
+						error(input_filename, current_line, "Negative offset constant is too large.", NULL);
 					}
 				}
 
@@ -1082,7 +1084,7 @@ void parse_line(char *buf)
 			}
 
 			if (offset > 0xfffff)
-				error(input_filename, current_line, "Constant too large", NULL);
+				error(input_filename, current_line, "Constant too large.", NULL);
 
 			new_entry->data |= (offset & 0xfffff);
 
@@ -1090,7 +1092,7 @@ void parse_line(char *buf)
 			break;
 		case 'b':
 			if (parse_symbol(operands, symbol_buffer) == false)
-				error(input_filename, current_line, "Label expected", NULL);
+				error(input_filename, current_line, "Label expected.", NULL);
 
 			new_entry->reference_type = relative;
 			strcpy(new_entry->label, symbol_buffer);
@@ -1107,7 +1109,7 @@ void parse_line(char *buf)
 			else
 			{
 				if (parse_symbol(operands, symbol_buffer) == false)
-					error(input_filename, current_line, "Label expected", NULL);
+					error(input_filename, current_line, "Label expected.", NULL);
 				new_entry->reference_type = absolute;
 				strcpy(new_entry->label, symbol_buffer);
 			}
@@ -1115,7 +1117,7 @@ void parse_line(char *buf)
 		default:
 			if (*operands != insn_table[insn_num].operands[i])
 			{
-				error(input_filename, current_line, "Unexpected character encountered on line", NULL);
+				error(input_filename, current_line, "Unexpected character encountered on line.", NULL);
 			}
 			operands++;
 		}
@@ -1123,7 +1125,7 @@ void parse_line(char *buf)
 
 	// Check for more characters than we expect.
 	if (still_more(operands))
-		error(input_filename, current_line, "Unexpected character encountered on line", NULL);
+		error(input_filename, current_line, "Additional text after instruction.", NULL);
 }
 
 // This function will resolve all the label references that it can within the text segment
@@ -1258,8 +1260,6 @@ int main(int argc, char *argv[])
 		else
 			strcat(output_filename, ".o");
 	}
-
-	init();
 
 	ifstream sourcefile;
 	sourcefile.open(input_filename, ios::in);
