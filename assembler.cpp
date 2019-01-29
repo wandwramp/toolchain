@@ -938,14 +938,14 @@ void parse_line(char *buf)
 			if (still_more(operands))
 				error(input_filename, current_line, "Additional text after directive arguments.", NULL);
 		}
-		/*
+		
 		else if (strcmp(mnemonic, ".mask") == 0)
 			;
 		else if (strcmp(mnemonic, ".frame") == 0)
 			;
 		else if (strcmp(mnemonic, ".extern") == 0)
 			;
-		*/
+		
 		else
 			error(input_filename, current_line, "Unknown directive : ", mnemonic);
 		return;
