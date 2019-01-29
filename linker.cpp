@@ -433,22 +433,7 @@ int main(int argc, char *argv[])
 	data_size_symbol->address = data_size;
 
 	//check for segment overlaps
-	unsigned int  bss_end =  bss_address +  bss_size;
-	unsigned int text_end = text_address + text_size;
-	unsigned int data_end = data_address + data_size;
 
-	if (bss_end	>= text_address && text_end >= bss_address){
-		cerr << "ERROR: .bss and .text segments overlap " << output_filename << endl;
-		exit(1);
-	}
-	if (text_end >= data_address && data_end >= text_address){
-		cerr << "ERROR: .text and .data segments overlap " << output_filename << endl;
-		exit(1);
-	}
-	if (data_end >= bss_address && bss_end >= data_address){
-		cerr << "ERROR: .data and .bss segments overlap " << output_filename << endl;
-		exit(1);
-	}
 
 
 
@@ -576,7 +561,7 @@ int main(int argc, char *argv[])
 		cout << "entry point : 0x" << setw(5) << hex << setfill('0') << entry_point << endl;
 		cout << ".text segment size = 0x" << setw(8) << setfill('0') << hex << text_size << endl;
 		cout << ".data segment size = 0x" << setw(8) << setfill('0') << hex << data_size << endl;
-		cout << ".bss segment size = 0x" << setw(8) << setfill('0') << hex << bss_size << endl;
+		cout << ".bss  segment size = 0x" << setw(8) << setfill('0') << hex << bss_size << endl;
 	}
 
 	// What we probably want to do here, is output an S-Record
@@ -601,15 +586,30 @@ int main(int argc, char *argv[])
 	int starting_address = 0;
 	int buf_ptr = 0;
 
+	unsigned int  bss_start, bss_end = -1;
+	unsigned int data_start, data_end = -1;
+	unsigned int text_end = -1;
+
 	for (i = 0; i < NUM_SEGMENTS; i++)
 	{
 		// Loop through the files
-		if (i != BSS)
+		if (i != BSS){
 			for (int j = 0; j < num_files; j++)
 			{
 
 				// Set the starting address
 				current_address = file[j].segment_address[i];
+
+				if (j == 0){
+					switch (i){
+						case (TEXT):
+							//starting text should be correct					
+							break;
+						case (DATA):
+							data_start = current_address;					
+							break;				
+					}
+				}
 
 				int size;
 
@@ -636,6 +636,40 @@ int main(int argc, char *argv[])
 					current_address++;
 				}
 			}
+		}
+		switch (i){
+				case (TEXT):
+					text_end = current_address;			
+					break;
+				case (BSS):
+
+					bss_start = bss_address - bss_size;
+					bss_end = bss_address;
+
+					break;
+				case (DATA):
+					data_end = current_address;					
+					break;				
+			}
+	}
+
+	if (verbose_flag == true){
+		cerr << "text{0x" << setw(6) << hex << setfill('0') << starting_text_address << ", 0x" << setw(6) << hex << setfill('0') << text_end << "}" << endl;
+		cerr << "data{0x" << setw(6) << hex << setfill('0') <<            data_start << ", 0x" << setw(6) << hex << setfill('0') << data_end << "}" << endl;
+		cerr << " bss{0x" << setw(6) << hex << setfill('0') <<             bss_start << ", 0x" << setw(6) << hex << setfill('0') <<  bss_end << "}" << endl;
+	}
+
+	if (bss_end	> starting_text_address && text_end > bss_start){
+		cerr << "ERROR: .bss and .text segments overlap " << endl;
+		exit(1);
+	}
+	if (text_end > data_start && data_end > starting_text_address){
+		cerr << "ERROR: .text and .data segments overlap " << endl;
+		exit(1);
+	}
+	if (data_end > bss_start && bss_end > data_start){
+		cerr << "ERROR: .data and .bss segments overlap " << endl;
+		exit(1);
 	}
 
 	if (buf_ptr > 0)
