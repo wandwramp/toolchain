@@ -654,9 +654,10 @@ int main(int argc, char *argv[])
 	}
 
 	if (verbose_flag == true){
-		cerr << "text{0x" << setw(6) << hex << setfill('0') << starting_text_address << ", 0x" << setw(6) << hex << setfill('0') << text_end << "}" << endl;
-		cerr << "data{0x" << setw(6) << hex << setfill('0') <<            data_start << ", 0x" << setw(6) << hex << setfill('0') << data_end << "}" << endl;
-		cerr << " bss{0x" << setw(6) << hex << setfill('0') <<             bss_start << ", 0x" << setw(6) << hex << setfill('0') <<  bss_end << "}" << endl;
+		//cout << "\nsegment locations: {start, end}" << endl;
+		cout << ".text segment start = 0x" << setw(6) << hex << setfill('0') << starting_text_address << ", segment end = 0x" << setw(6) << hex << setfill('0') << text_end << endl;
+		cout << ".data segment start = 0x" << setw(6) << hex << setfill('0') <<            data_start << ", segment end = 0x" << setw(6) << hex << setfill('0') << data_end << endl;
+		cout << ".bss  segment start = 0x" << setw(6) << hex << setfill('0') <<             bss_start << ", segment end = 0x" << setw(6) << hex << setfill('0') <<  bss_end << endl;
 	}
 
 	if (bss_end	> starting_text_address && text_end > bss_start){
