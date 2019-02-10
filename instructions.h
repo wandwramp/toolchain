@@ -18,6 +18,7 @@ struct reg_type {
 extern insn_type insn_table[];
 
 extern void disassemble(unsigned int, unsigned int);
+extern void disassemble_view(unsigned int, unsigned int, char *);
 
 #endif
 

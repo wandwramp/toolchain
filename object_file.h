@@ -2,6 +2,7 @@
 #define OBJECT_FILE_H
 
 typedef enum { NONE = -1, TEXT = 0, DATA, BSS, NUM_SEGMENTS } seg_type;
+char * seg_type_name[] = {"NONE", "TEXT", "DATA", "BSS", "NUM_SEGMENTS"};
 
 typedef struct {
   // This magic number identifies the file as being an object file
@@ -18,14 +19,25 @@ typedef struct {
   unsigned int symbol_name_table_size;
 } object_header;
 
-typedef enum { GLOBAL_DATA,    // This defines a declared global data segment label
-	       GLOBAL_TEXT,    // This defines a declared global text segment label
-	       GLOBAL_BSS,     // This defines a declared global bss segment label
-	       TEXT_LABEL_REF, // This is a reference to our own text segment
-	       DATA_LABEL_REF, // This is a reference to our own data segment
-	       BSS_LABEL_REF,  // This is a reference to our own bss segment
-	       EXTERNAL_REF    // This is an unresolved (ie. external) reference
+typedef enum {
+		GLOBAL_DATA,    // This defines a declared global data segment label
+		GLOBAL_TEXT,    // This defines a declared global text segment label
+		GLOBAL_BSS,     // This defines a declared global bss segment label
+		TEXT_LABEL_REF, // This is a reference to our own text segment
+		DATA_LABEL_REF, // This is a reference to our own data segment
+		BSS_LABEL_REF,  // This is a reference to our own bss segment
+		EXTERNAL_REF    // This is an unresolved (ie. external) reference
 } reference_type;
+
+char * reference_type_name[7] ={ 
+		"GLOBAL_DATA",    // This defines a declared global data segment label
+		"GLOBAL_TEXT",    // This defines a declared global text segment label
+		"GLOBAL_BSS",     // This defines a declared global bss segment label
+		"TEXT_LABEL_REF", // This is a reference to our own text segment
+		"DATA_LABEL_REF", // This is a reference to our own data segment
+		"BSS_LABEL_REF",  // This is a reference to our own bss segment
+		"EXTERNAL_REF"    // This is an unresolved (ie. external) reference
+};
 
 typedef struct {
   unsigned int address;
