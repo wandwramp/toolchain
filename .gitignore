@@ -27,3 +27,4 @@ tags
 # Persistent undo
 [._]*.un~
 .vscode/settings.json
+wobj

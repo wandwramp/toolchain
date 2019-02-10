@@ -160,24 +160,50 @@ typedef struct
 
 void usage(char *progname)
 {
-	cerr << "USAGE: " << progname << "  file\n";
+	cerr << "USAGE: " << progname << "  file [options]\n";
+	cerr << "\t '-d' display dissasembly" << endl;
+
 	exit(1);
 }
 
 int main(int argc, char *argv[])
 {
 	int i;
+	bool display_object = true;
+	bool display_dissasemble = false;
 	
 	char output_filename[300] = {0};
 
-	if (argc != 2)
+	if (argc < 2)
 		usage(argv[0]);
 
 	// Here we must parse the arguments
-	char *input_filename;
+	char *input_filename = NULL;
 
-			// Otherwise it is a filename
-	input_filename = argv[1];	
+	for (i = 2; i < argc; i++)
+	{
+		///cout << "testing : " << argv[i] << endl;
+		// Is this an option
+		if (argv[i][0] == '-')
+		{
+			// This is the only valid option for now
+			if (strcmp(argv[i], "-d") == 0)
+			{
+				display_dissasemble = true;
+				//i++;
+			}
+			else
+				usage(argv[0]);
+		}
+		else
+		{
+			usage(argv[0]);
+		}
+	}
+
+	// Otherwise it is a filename
+	input_filename = argv[1];
+
 
 	if (output_filename[0] == '\0')
 	{
@@ -261,30 +287,11 @@ int main(int argc, char *argv[])
 	// Scan through the segment labels
 	for (i = 0; i < num_relocs; i++)
 	{
-		// cerr << setw(3) << setfill(' ') << i;
-		// cerr << ", 0x"<< setw(5) << setfill('0') << hex << relocation_array[i].address;
-		// //cerr << ", " << setw(15) << setfill(' ') << &(symbol_names[relocation_array[i].symbol_ptr]);
-		// cerr << ", " << setw(15) << setfill(' ') << reference_type_name[relocation_array[i].type] << ", ";
-		// //cerr << endl;
-
-
-		// typedef struct {
-		// unsigned int address;
-		// unsigned int symbol_ptr;
-
-		// reference_type type;
-		// seg_type source_seg;
-		// } reloc_entry;
-
-
-
-
 		// Make a note of all the globals
 		if (relocation_array[i].type == GLOBAL_TEXT || relocation_array[i].type == GLOBAL_DATA || relocation_array[i].type == GLOBAL_BSS)
 		{
 			// Create a new label entry for this global
-			label_entry *temp = get_label(&(symbol_names[relocation_array[i].symbol_ptr]));
-			
+			label_entry *temp = get_label(&(symbol_names[relocation_array[i].symbol_ptr]));			
 
 			// Check for duplicate labels
 			if (temp->resolved == true)
@@ -352,18 +359,7 @@ int main(int argc, char *argv[])
 			new_ref->address = relocation_array[i].address;
 			new_ref->next = file.references;
 
-
-
 			label_entry *temp = get_label_address(file.segment[TEXT][relocation_array[i].address]&0xfffff,relocation_array[i].type);
-			
-
-			
-			// temp->address = relocation_array[i].address;
-			// temp->segment = TEXT;
-			//temp->isGlobal = false;
-			// temp->resolved = true;
-			// temp->next = NULL;
-			// temp->file_no = 0;
 
 			new_ref->label = temp;
 			
@@ -374,7 +370,7 @@ int main(int argc, char *argv[])
 				new_ref->label->segment = TEXT;
 			else if (relocation_array[i].type == DATA_LABEL_REF)
 				new_ref->label->segment  = DATA;
-			else if (relocation_array[i].type == GLOBAL_TEXT) //TODO
+			else if (relocation_array[i].type == GLOBAL_TEXT)
 				temp->segment = TEXT;
 			else
 				new_ref->label->segment  = BSS;
@@ -383,189 +379,137 @@ int main(int argc, char *argv[])
 		}
 	}
 
-
-	cout << setw(45) << setfill('#') << "#" << endl;
-	//basic object file information
-	cout << "# File name:      " << file.filename << endl;
-	cout << "# Text size:      " << setw(5) << setfill(' ') << hex << file.file_header.text_seg_size          << endl;
-	cout << "# Data Size:      " << setw(5) << setfill(' ') << hex << file.file_header.data_seg_size          << endl;
-	cout << "# Bss Size:       " << setw(5) << setfill(' ') << hex << file.file_header.bss_seg_size           << endl;
-
-	//global and external references
 	label_entry * currLabel = label_list;
-	cout << "#" << endl << "# LABEL_LIST" << endl;
-	cout << "#" << setw(15) << setfill(' ') << "Label Name";
-	cout << ", " << setw(8) << setfill(' ') << "location";
-	cout << ", " << setw(7) << setfill(' ') << "Address";	
-	cout << ", " << setw(8) << setfill(' ') << "segment";
-	cout << endl;
-	while(currLabel != NULL){
-#define SHOW_LOCAL 0
-		if (currLabel->isGlobal == 1){
-			cout << "#" << setw(15) << setfill(' ') << currLabel->name;
-			cout << ", " << setw(8) << setfill(' ')<< "GLOBAL";
-			cout << ", 0x" << setw(5) << setfill('0') << hex << currLabel->address;
-			cout << ", " << setw(8) << setfill(' ') << seg_type_name[currLabel->segment + 1];
-			cout << endl;
-		} else if (!currLabel->resolved){
-			cout << "#" << setw(15) << setfill(' ') << currLabel->name;
-			cout << ", " << setw(8) << setfill(' ')<< "EXTERNAL";
-			cout << ", 0x" << setw(5) << setfill('?') << "";
-			cout << endl;
-		} else if (SHOW_LOCAL){
-			cout << "#" << setw(15) << setfill(' ') << currLabel->name;
-			cout << ", " << setw(8) << setfill(' ')<< "LOCAL";
-			cout << ", 0x" << setw(5) << setfill('0') << hex << currLabel->address;
-			cout << ", " << setw(8) << setfill(' ') << seg_type_name[currLabel->segment + 1];
-			cout << endl;
-		}
-		currLabel = currLabel->next;	
-	}
-
-
-
-	// cout << "RELOCATION ARRAY" << endl;
-	// cout << "\t" << setw(5) << setfill(' ') << hex << "address";
-	// cout << "," << setw(15) << setfill(' ') << "type";
-	// cout << "," << setw(12) << setfill(' ') << "source_seg";
-	// cout << "," << setw(16) << setfill(' ') << "symbol_names" << endl;
-
-	// for (int i = 0; i < num_relocs; i++){
-	// 	cout << "\t0x"<< setw(5) << setfill('0') << hex << relocation_array[i].address;
-	// 	cout << "," << setw(15) << setfill(' ') << reference_type_name[relocation_array[i].type];
-	// 	cout << "," << setw(12) << setfill(' ') << hex << seg_type_name[relocation_array[i].source_seg+1];
-	// 	cout << "," << setw(16) << setfill(' ') << & symbol_names[relocation_array[i].symbol_ptr] << endl;
-	// }
-
 	reference * currRef = file.references;
 
-	// cout << "#" << endl;
-	// cout << "# REFERENCE_LIST" << endl;
-	// cout << setw(5) << setfill(' ') << "from Addr";
-	// cout << ", " << setw(15) << setfill(' ') << "name";
-	// cout << ", " << setw(8) << setfill(' ') << "To Addr";
-	// cout << endl;	
-	// while(currRef != NULL){		
-	// 	label_entry * currLabel = currRef->label;		
-	// 	cout << "# " << setw(4) << setfill(' ') <<"0x"<< setw(5) << setfill('0') << currRef->address;		
-	// 	if(currLabel != NULL){
-	// 		cout << ", " << setw(15) << setfill(' ') << currLabel->name;
-	// 	}
-	// 	cout << ", " << setw(3) << setfill(' ') <<"0x" << setw(5) << setfill('0') << hex << (file.segment[TEXT][currRef->address] & 0xfffff);
-	// 	cout << endl;		
-	// 	currRef = currRef->next;	
-	// }
+	if(display_object){
+		cout << setw(45) << setfill('#') << "#" << endl;
+		//basic object file information
+		cout << "# File name:      " << file.filename << endl;
+		cout << "# Text size:      " << setw(5) << setfill(' ') << hex << file.file_header.text_seg_size          << endl;
+		cout << "# Data Size:      " << setw(5) << setfill(' ') << hex << file.file_header.data_seg_size          << endl;
+		cout << "# Bss Size:       " << setw(5) << setfill(' ') << hex << file.file_header.bss_seg_size           << endl;
 
-	cout << setw(45) << setfill('#') << "#" << endl;
-	cout << endl << ".text # size: 0x" << setw(5) << setfill('0') << hex << file.file_header.text_seg_size << endl;
-	for(unsigned int i = 0; i < file.file_header.text_seg_size; i++){ //print TEXT		
-
-		currLabel = label_list;
-		while(currLabel != NULL){	//handle label markers	
-
-			//cout << " testsing: " << currLabel->name;
-			if (currLabel->address == i && currLabel->segment == TEXT){
-				if (currLabel->isGlobal) cout << ".global " << currLabel->name << endl;
-				cout << currLabel->name << ":" << endl;
-				break;
-			}		
-			currLabel = currLabel->next;	
-		}
-
-		//cout << "\t#0x" << setw(5) << setfill('0') << hex << i <<  ": 0x"<< setw(8) << setfill('0') << hex << file.segment[TEXT][i] << "\t";		
-
-		//replace references to labels
-		currRef = file.references;
-		char * temp_name = NULL; //seg_type_name[currRef->target_seg+1];
-		while(currRef != NULL){		
-			//cerr << " 0x" << setw(5) << setfill('0') << hex << (file.segment[TEXT][currRef->address] & 0xfffff);	
-			label_entry * currLabel = currRef->label;	
-			if(currLabel != NULL){
-				if (currRef->address == i){ //&& (file.segment[TEXT][currRef->address] & 0xfffff) == currLabel->address){				
-					temp_name = currLabel->name;
-					break;
-				}
-			}		
-			currRef = currRef->next;	
-		}
-		cout << "\t";
-		disassemble_view(i,file.segment[TEXT][i], temp_name); //TODO revamp this
+		//global and external references
 		
-		//if(currRef != NULL)cerr << currRef->address << endl;		
-		
+		cout << "#" << endl << "# LABEL_LIST" << endl;
+		cout << "#" << setw(15) << setfill(' ') << "Label Name";
+		cout << ", " << setw(8) << setfill(' ') << "Location";
+		cout << ", " << setw(7) << setfill(' ') << "Address";	
+		cout << ", " << setw(8) << setfill(' ') << "Segment";
 		cout << endl;
-	}
-
-	cout << endl << ".data # size: 0x" << setw(5) << setfill('0') << hex << file.file_header.data_seg_size << endl;
-	for(unsigned int i = 0; i < file.file_header.data_seg_size; i++){ //print DATA
-
-		currLabel = label_list;
-		while(currLabel != NULL){	//handle label markers	
-			//cout << " testsing: " << currLabel->name;
-			if (currLabel->address == i && currLabel->segment == DATA){
-				cout << currLabel->name << ":" << endl;
-				break;
-			}		
+		while(currLabel != NULL){
+			if (currLabel->isGlobal == 1){
+				cout << "#" << setw(15) << setfill(' ') << currLabel->name;
+				cout << ", " << setw(8) << setfill(' ')<< "GLOBAL";
+				cout << ", 0x" << setw(5) << setfill('0') << hex << currLabel->address;
+				cout << ", " << setw(8) << setfill(' ') << seg_type_name[currLabel->segment + 1];
+				cout << endl;
+			} else if (!currLabel->resolved){
+				cout << "#" << setw(15) << setfill(' ') << currLabel->name;
+				cout << ", " << setw(8) << setfill(' ')<< "EXTERNAL";
+				cout << ", 0x" << setw(5) << setfill('?') << "";
+				cout << endl;
+			} else if (false){
+				cout << "#" << setw(15) << setfill(' ') << currLabel->name;
+				cout << ", " << setw(8) << setfill(' ')<< "LOCAL";
+				cout << ", 0x" << setw(5) << setfill('0') << hex << currLabel->address;
+				cout << ", " << setw(8) << setfill(' ') << seg_type_name[currLabel->segment + 1];
+				cout << endl;
+			}
 			currLabel = currLabel->next;	
 		}
-		cout << "\t.word\t0x" << setw(8) << setfill('0') << hex << file.segment[DATA][i] << endl;
+		cout << setw(45) << setfill('#') << "#" << endl;
 	}
 
+	if(display_dissasemble){
+		cout << endl << ".text # size: 0x" << setw(5) << setfill('0') << hex << file.file_header.text_seg_size << endl;
+		for(unsigned int i = 0; i < file.file_header.text_seg_size; i++){ //print TEXT		
 
-	cout << endl << ".bss # size: 0x" << setw(5) << setfill('0') << hex << file.file_header.bss_seg_size << endl;
-	
-	
-	label_entry * bss_entry = NULL;
-	label_entry * last_entry = NULL;
-	int lastAddress = -1;
-	int addressItr = 0xfffff;
-
-	while(currLabel != NULL){ //print BSS
-		if(currLabel->segment == BSS && currLabel->resolved){ //if the current label is a BSS pointer
-			if(currLabel->address <= addressItr && currLabel->address > lastAddress){
-				addressItr = currLabel->address;
-				last_entry = currLabel;
+			currLabel = label_list;
+			while(currLabel != NULL){	//handle label markers
+				//cout << " testsing: " << currLabel->name;
+				if ((unsigned int)currLabel->address == i && currLabel->segment == TEXT){
+					if (currLabel->isGlobal) cout << ".global " << currLabel->name << endl;
+					cout << currLabel->name << ":" << endl;
+					break;
+				}		
+				currLabel = currLabel->next;	
 			}
+
+			//replace references to labels
+			currRef = file.references;
+			char * temp_name = NULL; //seg_type_name[currRef->target_seg+1];
+			while(currRef != NULL){		
+				label_entry * currLabel = currRef->label;	
+				if(currLabel != NULL){
+					if ((unsigned int)currRef->address == i){				
+						temp_name = currLabel->name;
+						break;
+					}
+				}		
+				currRef = currRef->next;	
+			}
+			cout << "\t";
+			disassemble_view(i,file.segment[TEXT][i], temp_name);
+			
+			cout << endl;
 		}
-		currLabel = currLabel->next;
-	}
-	lastAddress = 0;
-	addressItr = 0xfffff;
 
+		cout << endl << ".data # size: 0x" << setw(5) << setfill('0') << hex << file.file_header.data_seg_size << endl;
+		for(unsigned int i = 0; i < file.file_header.data_seg_size; i++){ //print DATA
 
+			currLabel = label_list;
+			while(currLabel != NULL){	//handle label markers	
+				//cout << " testsing: " << currLabel->name;
+				if ((unsigned int)currLabel->address == i && currLabel->segment == DATA){
+					cout << currLabel->name << ":" << endl;
+					break;
+				}		
+				currLabel = currLabel->next;	
+			}
+			cout << "\t.word\t0x" << setw(8) << setfill('0') << hex << file.segment[DATA][i] << endl;
+		}
 
-	for(int i = 0; i < local_label_counter[2]; i++){
+		cout << endl << ".bss # size: 0x" << setw(5) << setfill('0') << hex << file.file_header.bss_seg_size << endl;		
 		
-		currLabel = label_list;
+		label_entry * bss_entry = NULL;
+		label_entry * last_entry = NULL;
+		int lastAddress = -1;
+		int addressItr = 0xfffff;
 		while(currLabel != NULL){ //print BSS
 			if(currLabel->segment == BSS && currLabel->resolved){ //if the current label is a BSS pointer
 				if(currLabel->address <= addressItr && currLabel->address > lastAddress){
 					addressItr = currLabel->address;
-					bss_entry = currLabel;
+					last_entry = currLabel;
 				}
 			}
 			currLabel = currLabel->next;
 		}
-		
 
-
-		
+		lastAddress = 0;
 		addressItr = 0xfffff;
-
-		cout << last_entry->name << ":" << endl;
-		
-		if ((bss_entry->address - lastAddress) != 0 )
-			cout << "\t.space 0x" << setw(5) << setfill('0') <<  hex << (bss_entry->address - lastAddress) <<endl;
-		lastAddress = bss_entry->address;
-		last_entry = bss_entry;
+		for(int i = 0; i < local_label_counter[2]; i++){
+			
+			currLabel = label_list;
+			while(currLabel != NULL){ //print BSS
+				if(currLabel->segment == BSS && currLabel->resolved){ //if the current label is a BSS pointer
+					if(currLabel->address <= addressItr && currLabel->address > lastAddress){
+						addressItr = currLabel->address;
+						bss_entry = currLabel;
+					}
+				}
+				currLabel = currLabel->next;
+			}			
+			addressItr = 0xfffff;
+			
+			cout << last_entry->name << ":" << endl;			
+			if ((bss_entry->address - lastAddress) != 0 )
+				cout << "\t.space 0x" << setw(5) << setfill('0') <<  hex << (bss_entry->address - lastAddress) <<endl;
+			lastAddress = bss_entry->address;
+			last_entry = bss_entry;
+		}
 	}
-
-
-
-
-
-
-
 	
 	cleanup();
 	return 0;
