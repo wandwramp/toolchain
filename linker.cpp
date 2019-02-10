@@ -490,6 +490,11 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	unsigned int  bss_start = -1, bss_end = -1;
+	unsigned int data_start = -1, data_end = -1;
+	unsigned int text_end = -1;
+
+
 	if (error_flag == true)
 		exit(1);
 
@@ -509,6 +514,8 @@ int main(int argc, char *argv[])
 
 				cout << "file '" << file[j].filename << "', starting : 0x" << setw(5) << hex << setfill('0')
 					 << current_address << ", ";
+
+				if (bss_start == (unsigned int)-1 && i == BSS) bss_start = current_address;
 
 				int size;
 				// Increment for the next segment
@@ -586,9 +593,7 @@ int main(int argc, char *argv[])
 	int starting_address = 0;
 	int buf_ptr = 0;
 
-	unsigned int  bss_start, bss_end = -1;
-	unsigned int data_start, data_end = -1;
-	unsigned int text_end = -1;
+
 
 	for (i = 0; i < NUM_SEGMENTS; i++)
 	{
@@ -642,9 +647,7 @@ int main(int argc, char *argv[])
 					text_end = current_address;			
 					break;
 				case (BSS):
-
-					bss_start = bss_address - bss_size;
-					bss_end = bss_address;
+					bss_end = bss_start + bss_size;
 
 					break;
 				case (DATA):
