@@ -475,9 +475,10 @@ int main(int argc, char *argv[])
 		
 		label_entry * bss_entry = NULL;
 		label_entry * last_entry = NULL;
+		currLabel = label_list;
 		int lastAddress = -1;
 		int addressItr = 0xfffff;
-		while(currLabel != NULL){ //print BSS
+		while(currLabel != NULL){
 			if(currLabel->segment == BSS && currLabel->resolved){ //if the current label is a BSS pointer
 				if(currLabel->address <= addressItr && currLabel->address > lastAddress){
 					addressItr = currLabel->address;
@@ -491,8 +492,10 @@ int main(int argc, char *argv[])
 		addressItr = 0xfffff;
 		for(int i = 0; i < local_label_counter[2]; i++){
 			
+			
+
 			currLabel = label_list;
-			while(currLabel != NULL){ //print BSS
+			while(currLabel != NULL){ 
 				if(currLabel->segment == BSS && currLabel->resolved){ //if the current label is a BSS pointer
 					if(currLabel->address <= addressItr && currLabel->address > lastAddress){
 						addressItr = currLabel->address;
@@ -504,9 +507,17 @@ int main(int argc, char *argv[])
 			addressItr = 0xfffff;
 			
 			cout << last_entry->name << ":" << endl;			
-			if ((bss_entry->address - lastAddress) != 0 )
+			if(bss_entry == NULL){
+				cout << "\t.space 0x" << setw(5) << setfill('0') <<  hex << file.file_header.bss_seg_size <<endl;
+				break;
+			}
+			else if ((bss_entry->address - lastAddress) != 0 )
 				cout << "\t.space 0x" << setw(5) << setfill('0') <<  hex << (bss_entry->address - lastAddress) <<endl;
+			
 			lastAddress = bss_entry->address;
+			
+			
+
 			last_entry = bss_entry;
 		}
 	}
