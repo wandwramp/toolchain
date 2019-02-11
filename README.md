@@ -8,6 +8,9 @@ These .srec files are then passed directly to WRAMPmon via `remote`, or further 
 by `trim` to create a .mem file which can be used as part of Vivado's synthesis tool
 when loading new versions of WRAMPmon onto physical Basys3 boards.
 
+`wobj` is also included in this repositroy, `wobj` is an object viewer and disassembler in one.
+`wobj` takes .o files, and displays on stdout.
+
 ## Usage
 
 `wasm` takes a single input file and produces a single output file, which defaults to
@@ -33,7 +36,10 @@ Exsposed to the programmer there are also three special labels, `bss_size`, `tex
 These three labels provide the size of the respective segment evaluated during the linking process.
 `la $1, bss_size` will load `$1` with the total size of the .bss segment.
 
+`wobj` first argument must be the object file to be inspected, followed by an optional `-d`, including
+this flag instructs `wobj` to display the dissasembly. 
+
 ## Building
 
-Building `wasm` and `wlink` simply requires `g++` to be installed.
-Type `make`, or specify a single program with `make wasm` or `make wlink`.
+Building `wasm`, `wlink` and `wobj` simply requires `g++` to be installed.
+Type `make`, or specify a single program with `make wasm`, `make wlink` or `make wobj`.
