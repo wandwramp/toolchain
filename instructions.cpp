@@ -226,7 +226,6 @@ void disassemble_view(unsigned int insn_address, unsigned int instruction, char 
 	unsigned int immediate = instruction & 0xffff;
 	//  int signed_immediate = ((immediate & 0x8000) ? (0xffff0000 | immediate) : immediate);
 	unsigned int address = instruction & 0xfffff;
-	int signed_address = ((address & 0x80000) ? (0xfff00000 | address) : address);
 
 	int insn_num = 0;
 
