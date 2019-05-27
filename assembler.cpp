@@ -915,7 +915,11 @@ void parse_line(char *buf)
 			if (new_label->resolved == true)
 				error(input_filename, current_line, "Duplicate label : ", symbol_buffer);
 
-			new_label->address = parse_word(operands);
+			offset = parse_word(operands);
+			if (offset > 0x000fffff){
+				error(input_filename, current_line, "Constant is too large", NULL);
+			}
+			new_label->address = offset;
 
 			new_label->line = current_line;
 			new_label->resolved = true;
