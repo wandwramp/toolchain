@@ -192,8 +192,6 @@ int main(int argc, char *argv[])
 	int i;
 	bool display_object = true;
 	bool display_dissasemble = false;
-	
-	char output_filename[300] = {0};
 
 	if (argc < 2)
 		usage(argv[0]);
@@ -201,35 +199,29 @@ int main(int argc, char *argv[])
 	// Here we must parse the arguments
 	char *input_filename = NULL;
 
-	for (i = 2; i < argc; i++)
+	for (i = 1; i < argc; i++)
 	{
 		///cout << "testing : " << argv[i] << endl;
 		// Is this an option
 		if (argv[i][0] == '-')
 		{
-			// This is the only valid option for now
+			// This is the only valid option
 			if (strcmp(argv[i], "-d") == 0)
 			{
 				display_dissasemble = true;
-				//i++;
 			}
 			else
 				usage(argv[0]);
 		}
 		else
 		{
-			usage(argv[0]);
+			// Otherwise it is a filename
+			if (argv[i] == NULL)
+			{
+				usage(argv[0]);
+			}
+			input_filename = argv[i];
 		}
-	}
-
-	// Otherwise it is a filename
-	input_filename = argv[1];
-
-
-	if (output_filename[0] == '\0')
-	{
-		// default to link.out
-		strcpy(output_filename, "link.out");
 	}
 
 	file_type file;
