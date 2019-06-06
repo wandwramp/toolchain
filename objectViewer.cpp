@@ -481,7 +481,17 @@ int main(int argc, char *argv[])
 				}		
 				currLabel = currLabel->next;	
 			}
-			cout << "\t.word\t0x" << setw(8) << setfill('0') << hex << file.segment[DATA][i] << endl;
+
+			// If the .word contains a value in the printable character range,
+			// add a comment that shows the character.
+			if (file.segment[DATA][i] >= 20 && file.segment[DATA][i] < 127)
+			{
+				cout << "\t.word\t0x" << setw(8) << setfill('0') << hex << file.segment[DATA][i] << "\t# '" << (char)file.segment[DATA][i] << "'" << endl;
+			}
+			else
+			{
+				cout << "\t.word\t0x" << setw(8) << setfill('0') << hex << file.segment[DATA][i] << endl;
+			}
 		}
 
 		cout << endl << ".bss # size: 0x" << setw(5) << setfill('0') << hex << file.file_header.bss_seg_size << endl;		
