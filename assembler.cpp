@@ -110,6 +110,11 @@ void init()
 	}
 
 	current_segment = TEXT;
+
+	current_line = 1;
+	num_globals = 0;
+	num_local_refs = 0;
+	num_unresolved = 0;
 }
 
 // Remove all dynamically allocated data structures
@@ -1156,7 +1161,6 @@ void parse_line(char *buf)
 
 // This function will resolve all the label references that it can within the text segment
 // After this only external absolute references should remain unresolved
-// This returns the number of external references
 void resolve_labels()
 {
 	for (int i = 0; i < NUM_SEGMENTS; i++)
@@ -1224,68 +1228,9 @@ void resolve_labels()
 		}
 }
 
-void usage(char *progname)
-{
-	cerr << "USAGE: " << progname << " [-o output] file\n";
-	exit(1);
-}
-
-int main(int argc, char *argv[])
+void process_file(char* output_filename)
 {
 	int i;
-	char output_filename[300] = {0};
-
-	if (argc < 2)
-		usage(argv[0]);
-
-	// Here we must parse the arguments
-	for (i = 1; i < argc; i++)
-	{
-		// Is this an option
-		if (argv[i][0] == '-')
-		{
-			// This is the only valid option for now
-			if (strcmp(argv[i], "-o") == 0)
-			{
-				if ((i + 1) == argc)
-					usage(argv[0]);
-
-				// Redefinition of the output file
-				if (output_filename[0] != '\0')
-					usage(argv[0]);
-
-				i++;
-				strcpy(output_filename, argv[i]);
-			}
-			else
-				usage(argv[0]);
-		}
-		else
-		{
-			// Otherwise it is a filename
-			// Multiple input files are not allowed
-			if (input_filename != NULL)
-				usage(argv[0]);
-			input_filename = argv[i];
-		}
-	}
-
-	if (input_filename == NULL)
-		usage(argv[0]);
-
-	if (output_filename[0] == '\0')
-	{
-		// Try to strip .S or .s and add .o
-		// Failing that, just add .o
-		strcpy(output_filename, input_filename);
-
-		int len = strlen(output_filename);
-
-		if (len > 1 && output_filename[len - 2] == '.' && toupper(output_filename[len - 1]) == 'S')
-			output_filename[len - 1] = 'o';
-		else
-			strcat(output_filename, ".o");
-	}
 
 	ifstream sourcefile;
 	sourcefile.open(input_filename, ios::in);
@@ -1310,6 +1255,8 @@ int main(int argc, char *argv[])
 		parse_line(buffer);
 		current_line++;
 	}
+
+	sourcefile.close();
 
 	// Resolve internal references
 	resolve_labels();
@@ -1487,11 +1434,91 @@ int main(int argc, char *argv[])
 	// Write the symbol names
 	outputfile.write(symbol_names, obj_header.symbol_name_table_size);
 
+	outputfile.close();
+
 	// Clean up our data structures
 	cleanup();
 
 	delete[] relocation_array;
 	delete[] symbol_names;
+}
+
+void usage(char *progname)
+{
+	cerr << "USAGE: " << progname << " [-o output] file[s]\n";
+	cerr << "Multiple files can be specified if -o is omitted\n";
+	exit(1);
+}
+
+int main(int argc, char *argv[])
+{
+	int i;
+	int num_filenames = 0;
+	char* input_filenames[300];
+	char output_filename[300] = {0};
+
+	if (argc < 2)
+		usage(argv[0]);
+
+	// Here we must parse the arguments
+	for (i = 1; i < argc; i++)
+	{
+		// Is this an option
+		if (argv[i][0] == '-')
+		{
+			// This is the only valid option
+			if (strcmp(argv[i], "-o") == 0)
+			{
+				if ((i + 1) == argc)
+					usage(argv[0]);
+
+				// Redefinition of the output file
+				if (output_filename[0] != '\0')
+					usage(argv[0]);
+
+				i++;
+				strcpy(output_filename, argv[i]);
+			}
+			else
+				usage(argv[0]);
+		}
+		else
+		{
+			if (argv[i] == NULL)
+			{
+				usage(argv[0]);
+			}
+			// Otherwise it is a filename
+			input_filenames[num_filenames++] = argv[i];
+		}
+	}
+
+	// -o along with multiple filenames is disallowed
+	if (num_filenames == 0 || (num_filenames > 1 && output_filename[0] != '\0'))
+	{
+		usage(argv[0]);
+	}
+
+	for (i = 0; i < num_filenames; i++)
+	{
+		input_filename = input_filenames[i];
+
+		if (output_filename[0] == '\0' || num_filenames > 1)
+		{
+			// Try to strip .S or .s and add .o
+			// Failing that, just add .o
+			strcpy(output_filename, input_filename);
+
+			int len = strlen(output_filename);
+
+			if (len > 1 && output_filename[len - 2] == '.' && toupper(output_filename[len - 1]) == 'S')
+				output_filename[len - 1] = 'o';
+			else
+				strcat(output_filename, ".o");
+		}
+
+		process_file(output_filename);
+	}
 
 	return 0;
 }
